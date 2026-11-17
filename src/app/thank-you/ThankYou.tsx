@@ -1,0 +1,48 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { track } from "@/lib/track";
+import { formatPrice, whatsappLink } from "@/lib/config";
+
+type Last = { id: string; total: number; pid: string; name: string; qty: number };
+
+export default function ThankYou() {
+  const id = useSearchParams().get("id");
+  const [order, setOrder] = useState<Last | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    try {
+      const raw = sessionStorage.getItem("lastOrder");
+      if (!raw) return;
+      const o: Last = JSON.parse(raw);
+      if (o.id !== id) return;
+      setOrder(o);
+      const key = `tracked:${o.id}`;
+      if (!sessionStorage.getItem(key)) {
+        track("Purchase", { id: o.pid, name: o.name, value: o.total, quantity: o.qty });
+        sessionStorage.setItem(key, "1");
+      }
+    } catch {}
+  }, [id]);
+
+  const wa = whatsappLink(`السلام عليكم، درت طلبية رقم ${id ?? ""}`);
+  return (
+    <div className="mx-auto max-w-xl px-4 py-16 text-center">
+      <div className="mx-auto grid size-20 place-items-center rounded-full bg-ok/10 text-4xl">✅</div>
+      <h1 className="mt-6 text-3xl font-extrabold text-navy">شكرا! طلبيتك وصلت</h1>
+      {id && <p className="mt-2 text-muted">رقم الطلبية: <b className="text-navy" dir="ltr">#{id}</b></p>}
+      {order && <p className="mt-1 text-muted">{order.name} — المجموع <b className="text-brand">{formatPrice(order.total)}</b></p>}
+      <div className="mt-8 rounded-3xl border border-line bg-soft p-6 text-right leading-8">
+        <p className="font-extrabold text-navy">📞 واش يصرا دروك؟</p>
+        <p>فريقنا يتصل بيك فأقرب وقت باش يأكد الطلبية. <b>خلي تيليفونك مفتوح</b> باش ما تفوتكش المكالمة.</p>
+        <p>من بعد التأكيد، الطلبية توصلك فـ 24 لـ 72 ساعة، وتخلص كي تستلم.</p>
+      </div>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {wa && <a href={wa} className="rounded-2xl bg-wa px-6 py-3 font-bold text-white">أكّد على الواتساب</a>}
+        <Link href="/" className="rounded-2xl bg-navy px-6 py-3 font-bold text-white">رجوع للمتجر</Link>
+      </div>
+    </div>
+  );
+}
