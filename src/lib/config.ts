@@ -9,6 +9,12 @@ export const store = {
   // رقم الهاتف كما يظهر للزبون (مثال: 0555 12 34 56)
   phone: process.env.NEXT_PUBLIC_PHONE || "",
   currency: "دج",
+  // أرقام البيكسل (ماشي سرية، تبان فالموقع عادي)
+  pixels: {
+    facebook: process.env.NEXT_PUBLIC_FB_PIXEL_ID || "",
+    tiktok: process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "",
+    snapchat: process.env.NEXT_PUBLIC_SNAP_PIXEL_ID || "",
+  },
 };
 
 export function formatPrice(n: number) {
