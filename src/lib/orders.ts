@@ -23,8 +23,8 @@ export type Order = {
   ip: string | null;
 };
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
 // يحفظ الطلبية: فـ Supabase إذا كان مربوط، وإلا فملف محلي (للتجربة على الكمبيوتر برك)
 export async function saveOrder(order: Order) {
@@ -33,7 +33,8 @@ export async function saveOrder(order: Order) {
       method: "POST",
       headers: {
         apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+        // المفاتيح الجديدة (sb_secret_...) تتبعث غير فـ apikey، والقدام (JWT) فـ Authorization تاني
+        ...(SUPABASE_KEY.startsWith("sb_") ? {} : { Authorization: `Bearer ${SUPABASE_KEY}` }),
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
