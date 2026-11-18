@@ -20,3 +20,14 @@ export function refreshSite(tag: "catalog" | "settings") {
   revalidateTag(tag);
   revalidatePath("/", "layout");
 }
+
+// إذا خانة جديدة (كيما landing) مازال ما تزادتش فـ Supabase: نحفظو بلاها
+export async function withoutMissing<T extends Record<string, unknown>>(fn: (row: T) => Promise<unknown>, row: T, optional = ["landing"]) {
+  try { await fn(row); }
+  catch (e) {
+    if (!/PGRST204|column|schema cache/i.test(String(e))) throw e;
+    const r = { ...row };
+    for (const k of optional) delete r[k];
+    await fn(r);
+  }
+}

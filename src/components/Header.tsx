@@ -1,15 +1,15 @@
 import Link from "next/link";
 import Logo from "./Logo";
-import { categories } from "@/lib/catalog";
+import { categories } from "@/lib/categories";
+import { getSettings } from "@/lib/settings";
 
-const perks = ["💵 الدفع عند الاستلام", "🚚 توصيل لـ 58 ولاية", "🛡️ ضمان على كل المنتجات", "📞 خدمة زبائن قبل وبعد الشراء"];
-
-export default function Header() {
+export default async function Header() {
+  const perks = (await getSettings()).content.announcement;
   return (
     <header className="sticky top-0 z-40">
       <div className="overflow-hidden bg-navy py-2 text-[13px] font-semibold text-white">
         <div className="marquee flex w-max gap-10 whitespace-nowrap">
-          {[...perks, ...perks, ...perks, ...perks].map((p, i) => <span key={i}>{p}</span>)}
+          {Array.from({ length: 4 }, () => perks).flat().map((p, i) => <span key={i}>{p}</span>)}
         </div>
       </div>
       <div className="border-b border-line bg-white/95 backdrop-blur">
@@ -22,7 +22,13 @@ export default function Header() {
             ))}
             <Link href="/contact" className="hover:text-brand">اتصل بنا</Link>
           </nav>
-          <Link href="/#products" className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark">تسوّق الآن</Link>
+          <div className="flex items-center gap-2">
+            <form action="/search" className="hidden lg:block">
+              <input name="q" placeholder="🔍 قلّب على منتج..." className="w-48 rounded-full border border-line bg-soft px-4 py-2 text-sm outline-none focus:w-64 focus:border-brand" />
+            </form>
+            <Link href="/search" aria-label="بحث" className="grid size-10 place-items-center rounded-full bg-soft text-lg lg:hidden">🔍</Link>
+            <Link href="/search" className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark">كل المنتجات</Link>
+          </div>
         </div>
         <nav className="flex gap-2 overflow-x-auto px-4 pb-3 text-sm md:hidden">
           {categories.map((c) => (

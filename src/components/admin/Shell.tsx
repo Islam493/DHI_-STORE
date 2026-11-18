@@ -10,8 +10,8 @@ const nav: Item[] = [
   { href: "/admin/orders", label: "الطلبات", icon: "🛒" },
   { href: "/admin/abandoned", label: "الطلبات المتروكة", icon: "🛍️", soon: true },
   { href: "/admin/products", label: "المنتجات", icon: "📦" },
-  { href: "/admin/reviews", label: "آراء الزبائن", icon: "⭐", soon: true },
-  { href: "/admin/landing", label: "صفحات الهبوط", icon: "🚀", soon: true },
+  { href: "/admin/reviews", label: "آراء الزبائن", icon: "⭐" },
+  { href: "/admin/products", label: "صفحات الهبوط", icon: "🚀" },
   { href: "/admin/design", label: "تصميم المتجر", icon: "🎨", soon: true },
   { href: "/admin/delivery", label: "التوصيل", icon: "🚚" },
   { href: "/admin/stats", label: "الإحصائيات", icon: "📈", soon: true },
@@ -24,7 +24,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   useEffect(() => setOpen(false), [path]);
-  const active = (h: string) => (h === "/admin" ? path === "/admin" : path.startsWith(h));
+  const active = (h: string, label?: string) => label === "صفحات الهبوط" ? false : (h === "/admin" ? path === "/admin" : path.startsWith(h));
 
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -46,7 +46,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </span>
         ) : (
           <Link key={n.href} href={n.href}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${active(n.href) ? "bg-brand text-white shadow-lg shadow-brand/30" : "text-white/80 hover:bg-white/10"}`}>
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${active(n.href, n.label) ? "bg-brand text-white shadow-lg shadow-brand/30" : "text-white/80 hover:bg-white/10"}`}>
             <span className="text-lg">{n.icon}</span>{n.label}
           </Link>
         ))}

@@ -38,7 +38,7 @@ export default function ThankYou({ whatsapp }: { whatsapp: string }) {
       <div className="mt-8 rounded-3xl border border-line bg-soft p-6 text-right leading-8">
         <p className="font-extrabold text-navy">📞 واش يصرا دروك؟</p>
         <p>فريقنا يتصل بيك فأقرب وقت باش يأكد الطلبية. <b>خلي تيليفونك مفتوح</b> باش ما تفوتكش المكالمة.</p>
-        <p>من بعد التأكيد، الطلبية توصلك فـ 24 لـ 72 ساعة، وتخلص كي تستلم.</p>
+        <p>من بعد التأكيد نبعثو الطلبية، ومدة التوصيل حسب الولاية. تخلص كي تستلم.</p>
       </div>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         {wa && <a href={wa} className="rounded-2xl bg-wa px-6 py-3 font-bold text-white">أكّد على الواتساب</a>}

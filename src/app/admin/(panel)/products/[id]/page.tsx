@@ -4,14 +4,37 @@ import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/components/admin/api";
 import { categories } from "@/lib/categories";
-import type { Product, Variant } from "@/lib/catalog";
+import type { Landing, Product, Variant } from "@/lib/catalog";
 
 type Form = {
   name: string; slug: string; tagline: string; category: string; active: boolean;
   price: string; compareAtPrice: string; description: string; images: string[]; variants: { name: string; price: string }[];
+  // صفحة الهبوط (نص: كل سطر عنصر)
+  l_headline: string; l_sub: string; l_ptitle: string; l_points: string; l_benefits: string; l_uses: string; l_notes: string; l_faqs: string; l_specs: string;
 };
 
-const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [] };
+const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
+const split = (s: string) => s.split("|").map((x) => x.trim());
+function landingToForm(l?: Landing) {
+  return {
+    l_headline: l?.headline || "", l_sub: l?.sub || "", l_ptitle: l?.problem.title || "", l_points: (l?.problem.points || []).join("\n"),
+    l_benefits: (l?.benefits || []).map((b) => `${b.icon} | ${b.title} | ${b.text}`).join("\n"),
+    l_uses: (l?.uses || []).join("\n"), l_notes: (l?.notes || []).join("\n"),
+    l_faqs: (l?.faqs || []).map((f) => `${f.q} | ${f.a}`).join("\n"),
+    l_specs: Object.entries(l?.specs || {}).map(([k, v]) => `${k} | ${v}`).join("\n"),
+  };
+}
+function formToLanding(f: Form): Landing {
+  return {
+    headline: f.l_headline, sub: f.l_sub, problem: { title: f.l_ptitle, points: lines(f.l_points) },
+    benefits: lines(f.l_benefits).map((l) => { const [icon, title, ...t] = split(l); return t.length ? { icon, title, text: t.join(" | ") } : { icon: "✅", title: icon, text: title || "" }; }),
+    uses: lines(f.l_uses), notes: lines(f.l_notes),
+    faqs: lines(f.l_faqs).map((l) => { const [q, ...a] = split(l); return { q, a: a.join(" | ") }; }).filter((x) => x.a),
+    specs: Object.fromEntries(lines(f.l_specs).map((l) => { const [k, ...v] = split(l); return [k, v.join(" | ")]; }).filter(([, v]) => v)),
+  };
+}
+
+const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [], ...landingToForm() };
 
 // نصغرو الصورة فالتيليفون قبل ما نرفعوها (أسرع + أقل من الحد)
 async function shrink(file: File): Promise<Blob> {
@@ -45,6 +68,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         price: String(p.price), compareAtPrice: p.compareAtPrice ? String(p.compareAtPrice) : "",
         description: p.description.join("\n"), images: p.images,
         variants: p.variants.map((v: Variant) => ({ name: v.name, price: String(v.price) })),
+        ...landingToForm(p.landing),
       });
     }).catch((e) => setErr(e.message));
   }, [id, isNew]);
@@ -78,7 +102,9 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   async function save() {
     setSaving(true); setErr("");
     if (!f) return;
-    const body = { ...f, price: Number(f.price), variants: f.variants.filter((v) => v.name.trim()) };
+    const { l_headline, l_sub, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs, ...rest } = f;
+    void [l_headline, l_sub, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs];
+    const body = { ...rest, price: Number(f.price), variants: f.variants.filter((v) => v.name.trim()), landing: formToLanding(f) };
     try {
       if (isNew) await api("/api/admin/products", { method: "POST", body: JSON.stringify(body) });
       else await api(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify(body) });
@@ -159,6 +185,24 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         ))}
         <button type="button" onClick={() => set("variants", [...f.variants, { name: "", price: f.price }])} className="rounded-xl bg-soft px-4 py-2 text-sm font-bold text-navy">➕ زيد نوع</button>
       </section>
+
+      <details className="rounded-2xl bg-white p-4 ring-1 ring-line" open={isNew ? undefined : true}>
+        <summary className="cursor-pointer font-extrabold text-navy">🚀 صفحة الهبوط <span className="text-xs font-normal text-muted">(الكلام اللي يبيع فصفحة المنتج)</span></summary>
+        <div className="mt-3 space-y-3">
+          <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800">⚠️ اكتب غير المعلومات الصحيحة تاع المنتج. ما تزيدش مميزات ما كانش.</p>
+          <div><label className={label}>العنوان الكبير</label><input className={input} value={f.l_headline} onChange={(e) => set("l_headline", e.target.value)} placeholder="مثلا: راقب دارك من تيليفونك وين ما كنت" /></div>
+          <div><label className={label}>الجملة تحت العنوان</label><textarea className={input} rows={2} value={f.l_sub} onChange={(e) => set("l_sub", e.target.value)} /></div>
+          <div><label className={label}>المشكل (العنوان)</label><input className={input} value={f.l_ptitle} onChange={(e) => set("l_ptitle", e.target.value)} placeholder="مثلا: تكون بعيد… وبالك عند رزقك؟" /></div>
+          <div><label className={label}>نقاط المشكل <span className="font-normal text-muted">(كل سطر نقطة)</span></label><textarea className={input} rows={3} value={f.l_points} onChange={(e) => set("l_points", e.target.value)} /></div>
+          <div><label className={label}>المميزات <span className="font-normal text-muted">(كل سطر: أيقونة | العنوان | الشرح)</span></label><textarea className={`${input} leading-7`} rows={6} dir="rtl" value={f.l_benefits} onChange={(e) => set("l_benefits", e.target.value)} placeholder={"🌙 | رؤية ليلية | تشوف حتى فالظلام"} /></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div><label className={label}>وين تستعملو <span className="font-normal text-muted">(كل سطر)</span></label><textarea className={input} rows={3} value={f.l_uses} onChange={(e) => set("l_uses", e.target.value)} placeholder={"الدار\nالحانوت"} /></div>
+            <div><label className={label}>ملاحظات مهمة <span className="font-normal text-muted">(كل سطر)</span></label><textarea className={input} rows={3} value={f.l_notes} onChange={(e) => set("l_notes", e.target.value)} placeholder="يلزم شريحة 4G..." /></div>
+          </div>
+          <div><label className={label}>أسئلة المنتج <span className="font-normal text-muted">(كل سطر: السؤال | الجواب)</span></label><textarea className={`${input} leading-7`} rows={4} value={f.l_faqs} onChange={(e) => set("l_faqs", e.target.value)} placeholder="تحتاج Wi-Fi؟ | لا، تخدم بشريحة 4G" /></div>
+          <div><label className={label}>المواصفات للمقارنة <span className="font-normal text-muted">(كل سطر: الخاصية | القيمة)</span></label><textarea className={`${input} leading-7`} rows={4} value={f.l_specs} onChange={(e) => set("l_specs", e.target.value)} placeholder={"الاتصال | 4G\nالدوران | 360°"} /></div>
+        </div>
+      </details>
 
       <details className="rounded-2xl bg-white p-4 ring-1 ring-line">
         <summary className="cursor-pointer font-bold text-muted">إعدادات متقدمة</summary>

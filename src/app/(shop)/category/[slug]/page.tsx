@@ -1,31 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ProductCard from "@/components/ProductCard";
-import { categories, getCategory, productsIn } from "@/lib/catalog";
+import ProductGrid from "@/components/ProductGrid";
+import { categories, getCategory, productsIn, sortProducts, type SortKey } from "@/lib/catalog";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ sort?: string }> };
 
 export function generateStaticParams() { return categories.map((c) => ({ slug: c.slug })); }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const c = getCategory((await params).slug);
-  return c ? { title: c.name, description: `${c.name} بأحسن الأسعار في الجزائر — توصيل لـ 58 ولاية والدفع عند الاستلام.` } : {};
+  return c ? { title: c.name, description: `${c.name} فالجزائر — توصيل لـ 58 ولاية والدفع عند الاستلام.`, alternates: { canonical: `/category/${c.slug}` } } : {};
 }
 
-export default async function CategoryPage({ params }: Props) {
+export default async function CategoryPage({ params, searchParams }: Props) {
   const c = getCategory((await params).slug);
   if (!c) notFound();
-  const list = await productsIn(c.slug);
+  const sp = await searchParams;
+  const sort = (["featured", "price-asc", "price-desc", "discount"].includes(sp.sort || "") ? sp.sort : "featured") as SortKey;
+  const list = sortProducts(await productsIn(c.slug), sort);
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-2 text-sm text-muted"><Link href="/" className="hover:text-brand">الرئيسية</Link> / {c.name}</nav>
       <h1 className="mb-6 text-3xl font-extrabold text-navy">{c.icon} {c.name}</h1>
-      {list.length ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">{list.map((p) => <ProductCard key={p.slug} p={p} />)}</div>
-      ) : (
-        <p className="rounded-2xl bg-soft p-8 text-center text-muted">منتجات جديدة جاية قريب 🔜</p>
-      )}
+      <ProductGrid products={list} base={`/category/${c.slug}`} sort={sort} />
     </div>
   );
 }

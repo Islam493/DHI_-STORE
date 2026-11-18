@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbDelete, dbUpdate } from "@/lib/db";
 import { getAllProducts, toRow } from "@/lib/catalog";
-import { fail, guard, refreshSite } from "@/lib/admin-api";
+import { fail, guard, refreshSite, withoutMissing } from "@/lib/admin-api";
 import { normalize } from "../normalize";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     const row = toRow({ ...r.product, id, sort: r.product.sort ?? cur.sort });
     const { id: _id, ...patch } = row;
     void _id;
-    await dbUpdate("products", { id }, patch);
+    await withoutMissing((r) => dbUpdate("products", { id }, r), patch);
     refreshSite("catalog");
     return NextResponse.json({ ok: true });
   } catch (e) { return fail(e); }

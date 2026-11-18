@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { api } from "@/components/admin/api";
 import SaveBar from "@/components/admin/SaveBar";
 
-type S = { whatsapp: string; phone: string; pixels: { facebook: string; tiktok: string; snapchat: string }; blocked: { phones: string[]; ips: string[] } };
+type Content = {
+  successOrders: number | null; announcement: string[]; socials: { facebook: string; instagram: string; tiktok: string };
+  warranty: string; delivery: string[]; returns: string[]; faqs: { q: string; a: string }[];
+};
+type S = { whatsapp: string; phone: string; pixels: { facebook: string; tiktok: string; snapchat: string }; blocked: { phones: string[]; ips: string[] }; content: Content };
 
 const pixelHelp = [
   { k: "facebook", label: "Facebook Pixel", icon: "📘", ph: "1234567890123456", url: "https://business.facebook.com/events_manager" },
@@ -21,7 +25,7 @@ export default function Settings() {
 
   async function save() {
     setSaving(true); setMsg(null);
-    try { await api("/api/admin/settings", { method: "PUT", body: JSON.stringify({ whatsapp: s!.whatsapp, phone: s!.phone, pixels: s!.pixels }) }); setMsg({ ok: true, text: "✅ تحفظ! الموقع تحدّث." }); }
+    try { await api("/api/admin/settings", { method: "PUT", body: JSON.stringify({ whatsapp: s!.whatsapp, phone: s!.phone, pixels: s!.pixels, content: s!.content }) }); setMsg({ ok: true, text: "✅ تحفظ! الموقع تحدّث." }); }
     catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
     setSaving(false);
   }
@@ -30,6 +34,11 @@ export default function Settings() {
   }
 
   const input = "w-full rounded-xl border border-line bg-white px-3 py-2.5 text-base outline-none focus:border-brand";
+  const c = s.content;
+  const setC = (patch: Partial<Content>) => setS({ ...s, content: { ...c, ...patch } });
+  const area = (k: "announcement" | "delivery" | "returns", rows = 4) => (
+    <textarea className={`${input} leading-7`} rows={rows} value={c[k].join("\n")} onChange={(e) => setC({ [k]: e.target.value.split("\n") })} />
+  );
   const card = "space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line md:p-5";
   return (
     <div className="space-y-4">
@@ -40,6 +49,42 @@ export default function Settings() {
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-bold">رقم الواتساب<input className={input} dir="ltr" inputMode="tel" value={s.whatsapp} onChange={(e) => setS({ ...s, whatsapp: e.target.value })} placeholder="0555123456" /></label>
           <label className="text-sm font-bold">رقم الهاتف (يبان للزبائن)<input className={input} dir="ltr" inputMode="tel" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} placeholder="0555 12 34 56" /></label>
+        </div>
+      </section>
+
+      <section className={card}>
+        <h2 className="font-extrabold text-navy">🏪 محتوى المتجر</h2>
+        <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">⚠️ هاد الكلام يبان للزبائن. اكتب غير الحوايج الصحيحة (الضمان، الإرجاع، الأرقام) باش تبقى الثقة.</p>
+        <label className="block text-sm font-bold">عدد الطلبيات الناجحة <span className="font-normal text-muted">(رقمك الحقيقي — فارغ = ما يبانش)</span>
+          <input className={input} inputMode="numeric" placeholder="مثلا 3000" value={c.successOrders ?? ""} onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); setC({ successOrders: v ? Number(v) : null }); }} />
+        </label>
+        <label className="block text-sm font-bold">الشريط اللي فوق <span className="font-normal text-muted">(كل سطر جملة)</span>{area("announcement", 4)}</label>
+        <label className="block text-sm font-bold">الضمان <span className="font-normal text-muted">(فارغ = ما يبانش)</span>
+          <input className={input} value={c.warranty} placeholder="مثلا: ضمان 6 أشهر على عيوب المصنع" onChange={(e) => setC({ warranty: e.target.value })} />
+        </label>
+        <label className="block text-sm font-bold">سياسة التوصيل <span className="font-normal text-muted">(كل سطر نقطة)</span>{area("delivery", 4)}</label>
+        <label className="block text-sm font-bold">سياسة الإرجاع والاستبدال {area("returns", 3)}</label>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {(["facebook", "instagram", "tiktok"] as const).map((k) => (
+            <label key={k} className="text-sm font-bold">{k === "facebook" ? "📘 Facebook" : k === "instagram" ? "📸 Instagram" : "🎵 TikTok"}
+              <input className={input} dir="ltr" placeholder="https://..." value={c.socials[k]} onChange={(e) => setC({ socials: { ...c.socials, [k]: e.target.value.trim() } })} />
+            </label>
+          ))}
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-bold">الأسئلة المتكررة (تبان فالرئيسية وفصفحات المنتجات)</p>
+          <div className="space-y-2">
+            {c.faqs.map((f, i) => (
+              <div key={i} className="space-y-1.5 rounded-xl bg-soft p-2.5">
+                <div className="flex gap-2">
+                  <input className={input} value={f.q} placeholder="السؤال" onChange={(e) => setC({ faqs: c.faqs.map((x, k) => (k === i ? { ...x, q: e.target.value } : x)) })} />
+                  <button type="button" onClick={() => setC({ faqs: c.faqs.filter((_, k) => k !== i) })} className="rounded-xl bg-sale/10 px-3 font-bold text-sale">✕</button>
+                </div>
+                <textarea className={input} rows={2} value={f.a} placeholder="الجواب" onChange={(e) => setC({ faqs: c.faqs.map((x, k) => (k === i ? { ...x, a: e.target.value } : x)) })} />
+              </div>
+            ))}
+            <button type="button" onClick={() => setC({ faqs: [...c.faqs, { q: "", a: "" }] })} className="rounded-xl bg-soft px-4 py-2 text-sm font-bold text-navy ring-1 ring-line">➕ زيد سؤال</button>
+          </div>
         </div>
       </section>
 

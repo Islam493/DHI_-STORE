@@ -1,28 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getWilayas } from "@/lib/settings";
+import { getSettings, getWilayas } from "@/lib/settings";
 import { formatPrice } from "@/lib/config";
 
 const pages = {
-  shipping: {
-    title: "التوصيل والأسعار",
-    body: [
-      "نوصلو لكامل الولايات الـ 58، للدار ولا لمكتب شركة التوصيل.",
-      "مدة التوصيل عادة من 24 لـ 72 ساعة بعد تأكيد الطلبية، وتقدر تزيد شوية فالولايات البعيدة.",
-      "الدفع عند الاستلام: تخلص للموزع كي توصلك السلعة.",
-      "قبل ما نبعثو، نتصلو بيك باش نأكدو الطلبية والعنوان.",
-    ],
-  },
-  returns: {
-    title: "الإرجاع والاستبدال",
-    body: [
-      "إذا وصلك منتج فيه عيب مصنع ولا ماشي هو اللي طلبتو، اتصل بينا فـ 48 ساعة من الاستلام.",
-      "نبدلوهولك بلا مصاريف إضافية إذا كان الخطأ من عندنا.",
-      "المنتج لازم يرجع فالعلبة تاعو مع كامل الإكسسوارات.",
-      "ما يتقبلش الإرجاع إذا كان المنتج مكسور بسبب سوء الاستعمال.",
-      "الضمان يغطي الأعطال التقنية فالمدة المذكورة فصفحة كل منتج.",
-    ],
-  },
+  shipping: { title: "التوصيل والأسعار" },
+  returns: { title: "الإرجاع والاستبدال" },
 } as const;
 
 type Props = { params: Promise<{ slug: string }> };
@@ -37,10 +20,12 @@ export default async function Policy({ params }: Props) {
   const p = pages[slug];
   if (!p) notFound();
   const wilayas = await getWilayas();
+  const { content } = await getSettings();
+  const body = slug === "shipping" ? content.delivery : [...content.returns, ...(content.warranty ? [`🛡️ ${content.warranty}`] : [])];
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-6 text-3xl font-extrabold text-navy">{p.title}</h1>
-      <ul className="space-y-3 leading-8">{p.body.map((l) => <li key={l} className="rounded-2xl bg-soft p-4">• {l}</li>)}</ul>
+      <ul className="space-y-3 leading-8">{body.map((l) => <li key={l} className="rounded-2xl bg-soft p-4">• {l}</li>)}</ul>
       {slug === "shipping" && (
         <div className="mt-8 overflow-hidden rounded-2xl border border-line">
           <table className="w-full text-sm">
