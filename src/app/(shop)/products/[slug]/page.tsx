@@ -82,7 +82,8 @@ export default async function ProductPage({ params }: Props) {
           <div className="md:sticky md:top-28 md:self-start"><Gallery images={p.images} alt={p.name} badge={off} /></div>
           <div>
             {cat && <span className="inline-block rounded-full bg-brand/10 px-3 py-1 text-xs font-bold text-brand">{cat.icon} {cat.name}</span>}
-            <h1 className="mt-3 text-2xl font-extrabold leading-snug text-navy md:text-3xl">{p.name}</h1>
+            {L?.headline && <p className="mt-3 text-lg font-extrabold leading-snug text-brand md:text-xl">{L.headline}</p>}
+            <h1 className="mt-1 text-2xl font-extrabold leading-snug text-navy md:text-3xl">{p.name}</h1>
             {L?.sub && <p className="mt-2 leading-7 text-muted">{L.sub}</p>}
             {sum.count > 0 && (
               <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-sm"><Stars value={sum.avg} /> <b>{sum.avg.toFixed(1)}</b> <span className="text-muted">({sum.count} رأي)</span></a>
@@ -127,9 +128,19 @@ export default async function ProductPage({ params }: Props) {
         </section>
       ) : null}
 
+      {/* القصة: الزبون يتخيّل روحو */}
+      {L?.story && (
+        <section className="mx-auto max-w-3xl px-4 py-14 text-center">
+          <Reveal>
+            <p className="text-4xl">❤️</p>
+            <p className="mt-4 text-xl font-bold leading-[2.1] text-navy md:text-2xl md:leading-[2.1]">{L.story}</p>
+          </Reveal>
+        </section>
+      )}
+
       {/* 3. الحل — موشن جرافيك بصورة المنتج الحقيقية */}
       {L?.benefits.length ? (
-        <MotionShowcase image={p.images[1] || p.images[0]} name={p.name} headline={L.headline || p.name} benefits={L.benefits} scan={p.category.startsWith("cameras") || p.category === "hidden"} />
+        <MotionShowcase image={p.images[1] || p.images[0]} name={p.name} headline={`كيفاش ${p.name.split("–")[0].trim()} يريّحلك بالك؟`} benefits={L.benefits} scan={p.category.startsWith("cameras") || p.category === "hidden"} />
       ) : null}
 
       {/* 4. المميزات */}
@@ -256,8 +267,9 @@ export default async function ProductPage({ params }: Props) {
         <section className="overflow-hidden rounded-[2rem] bg-gradient-to-l from-navy to-navy-2 p-6 text-white md:p-10">
           <div className="grid items-center gap-6 md:grid-cols-[1fr_auto]">
             <div>
-              <h2 className="text-2xl font-extrabold md:text-3xl">{p.name}</h2>
-              <p className="mt-2 text-white/80">💵 الدفع عند الاستلام · 🚚 توصيل لـ 58 ولاية · 📞 نتصلو بيك نأكدو قبل ما نبعثو</p>
+              {L?.promise && <p className="text-2xl font-extrabold leading-snug md:text-3xl">{L.promise}</p>}
+              <p className={`${L?.promise ? "mt-2 text-lg font-bold text-white/85" : "text-2xl font-extrabold md:text-3xl"}`}>{p.name}</p>
+              <p className="mt-2 text-white/75">💵 الدفع عند الاستلام · 🚚 توصيل لـ 58 ولاية · 📞 نتصلو بيك نأكدو قبل ما نبعثو</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-extrabold">{formatPrice(p.price)}</p>

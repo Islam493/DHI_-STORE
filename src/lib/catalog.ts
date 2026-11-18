@@ -15,6 +15,8 @@ export type Landing = {
   notes: string[];
   faqs: { q: string; a: string }[];
   specs: Record<string, string>;
+  story?: string; // قصة قصيرة من القلب ("تخيّل...")
+  promise?: string; // الوعد فالأخير
 };
 const landings = landingSeed as Record<string, Landing>;
 export const emptyLanding = (): Landing => ({ headline: "", sub: "", problem: { title: "", points: [] }, benefits: [], uses: [], notes: [], faqs: [], specs: {} });
@@ -67,7 +69,8 @@ export const fromRow = (r: ProductRow): Product => ({
   id: r.id, slug: r.slug, name: r.name, tagline: r.tagline || "", category: r.category, active: r.active,
   price: r.price, compareAtPrice: r.compare_at_price, variants: r.variants || [], images: r.images || [],
   description: (r.description || "").split("\n").map((l) => l.trim()).filter(Boolean), sort: r.sort,
-  landing: r.landing && r.landing.headline ? r.landing : landings[r.slug],
+  // المحتوى المحفوظ فاللوحة له الأولوية، إلا إذا كان نسخة قديمة بلا قصة
+  landing: r.landing && r.landing.headline && (r.landing.story || !landings[r.slug]?.story) ? r.landing : landings[r.slug],
   stock: typeof r.stock === "number" ? r.stock : null,
   lowStock: typeof r.low_stock === "number" ? r.low_stock : null,
   sku: r.sku || null,
