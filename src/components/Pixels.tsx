@@ -1,10 +1,14 @@
 import Script from "next/script";
-import { store } from "@/lib/config";
+import { getSettings } from "@/lib/settings";
 
-export default function Pixels() {
-  const { facebook: fb, tiktok: tt, snapchat: sc } = store.pixels;
+const clean = (v: string) => v.replace(/[^A-Za-z0-9_-]/g, "");
+
+export default async function Pixels() {
+  const px = (await getSettings()).pixels;
+  const fb = clean(px.facebook), tt = clean(px.tiktok), sc = clean(px.snapchat);
   return (
     <>
+      <script dangerouslySetInnerHTML={{ __html: `window.__px=${JSON.stringify({ fb: !!fb, tt: !!tt, sc: !!sc })}` }} />
       {fb && (
         <Script id="fb-pixel" strategy="afterInteractive">{`
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');

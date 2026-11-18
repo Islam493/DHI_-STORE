@@ -1,11 +1,41 @@
-import { dbInsert } from "./db";
+import { dbInsert, dbUpdate } from "./db";
 
 export * from "./order-types";
-import type { Order } from "./order-types";
+import type { Order, Status } from "./order-types";
 
 // يحفظ الطلبية: فـ Supabase إذا كان مربوط، وإلا فملف محلي (للتجربة على الكمبيوتر برك)
+// الخانات الجديدة: إذا مازال ما تزادوش فـ Supabase، نحفظو بلاهم (باش ما تضيعش حتى طلبية)
+const OPTIONAL = ["history", "updated_at", "tracking", "shipped_at"] as const;
+const missingColumn = (e: unknown) => /PGRST204|column|schema cache/i.test(String(e));
+function strip<T extends Record<string, unknown>>(o: T) {
+  const c = { ...o };
+  for (const k of OPTIONAL) delete c[k];
+  return c;
+}
+
 export async function saveOrder(order: Order) {
-  await dbInsert("orders", order);
+  const row = { ...order, history: [{ s: "new", at: order.created_at }] };
+  try {
+    await dbInsert("orders", row);
+  } catch (e) {
+    if (!missingColumn(e)) throw e;
+    await dbInsert("orders", strip(row));
+  }
+}
+
+// تعديل طلبية + تسجيل الحالة الجديدة فالتاريخ
+export async function updateOrder(cur: Order, patch: Partial<Order>) {
+  const at = new Date().toISOString();
+  const p: Record<string, unknown> = { ...patch, updated_at: at };
+  if (patch.status && patch.status !== cur.status) {
+    p.history = [...(cur.history || []), { s: patch.status as Status, at }];
+  }
+  try {
+    await dbUpdate("orders", { id: cur.id }, p);
+  } catch (e) {
+    if (!missingColumn(e)) throw e;
+    await dbUpdate("orders", { id: cur.id }, strip(p));
+  }
 }
 
 // إشعار تيليغرام فوري كي تجي طلبية

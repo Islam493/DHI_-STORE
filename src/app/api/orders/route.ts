@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProduct } from "@/lib/catalog";
-import { getWilayas } from "@/lib/settings";
+import { getSettings, getWilayas } from "@/lib/settings";
 import { saveOrder, notifyTelegram, type Order } from "@/lib/orders";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
@@ -60,6 +60,11 @@ export async function POST(req: Request) {
   if (Object.keys(errors).length) return NextResponse.json({ errors }, { status: 422 });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || null;
+  // الأرقام والـ IP المحظورين: نرجعو "نجحت" بلا ما نحفظو (المحتال ما يعرفش)
+  const { blocked } = await getSettings();
+  if (blocked.phones.includes(phone) || (ip && blocked.ips.includes(ip))) {
+    return NextResponse.json({ ok: true, id: Date.now().toString(36).toUpperCase(), total: 0 });
+  }
   if (limited(`p:${phone}`) || (ip && limited(`i:${ip}`))) {
     return NextResponse.json({ error: "بعثت بزاف طلبيات. عاود بعد شوية ولا اتصل بينا." }, { status: 429 });
   }

@@ -21,15 +21,32 @@ export type Order = {
   ip: string | null;
   tracking?: string | null; // رقم التتبع عند شركة التوصيل
   shipped_at?: string | null;
+  history?: { s: string; at: string }[] | null; // تاريخ الحالات
+  updated_at?: string | null;
 };
 
+// الحالات (بنفس ترتيب العمل: اتصال ← تأكيد ← توصيل)
 export const statuses = {
-  new: { label: "جديدة", color: "bg-brand/10 text-brand" },
-  confirmed: { label: "مؤكدة", color: "bg-amber-100 text-amber-700" },
-  shipped: { label: "مبعوثة", color: "bg-violet-100 text-violet-700" },
-  delivered: { label: "مستلمة", color: "bg-ok/10 text-ok" },
-  returned: { label: "راجعة", color: "bg-sale/10 text-sale" },
-  cancelled: { label: "ملغية", color: "bg-gray-200 text-gray-600" },
+  new: { label: "جديدة", icon: "🆕", color: "bg-sky-100 text-sky-700" },
+  no_answer: { label: "لم يرد على الاتصال", icon: "📵", color: "bg-orange-100 text-orange-700" },
+  busy: { label: "الخط مشغول", icon: "📞", color: "bg-orange-100 text-orange-700" },
+  postponed: { label: "مؤجلة", icon: "📅", color: "bg-amber-100 text-amber-700" },
+  waiting_client: { label: "في انتظار اتصال العميل", icon: "⏳", color: "bg-amber-100 text-amber-700" },
+  confirmed: { label: "مؤكدة", icon: "✅", color: "bg-teal-100 text-teal-700" },
+  shipped: { label: "عند شركة التوصيل", icon: "🚚", color: "bg-violet-100 text-violet-700" },
+  delivered: { label: "مكتملة", icon: "🎉", color: "bg-green-100 text-green-700" },
+  returned: { label: "مرجع", icon: "↩️", color: "bg-red-100 text-red-700" },
+  cancelled: { label: "ملغاة", icon: "❌", color: "bg-gray-200 text-gray-600" },
+  cancelled_client: { label: "ملغاة من قبل العميل", icon: "🙅", color: "bg-gray-200 text-gray-600" },
+  fake: { label: "مزيف", icon: "⚠️", color: "bg-red-100 text-red-800" },
+  duplicate: { label: "مكرر", icon: "📑", color: "bg-gray-200 text-gray-600" },
 } as const;
 export type Status = keyof typeof statuses;
 
+export const groups = {
+  pending: ["new", "no_answer", "busy", "postponed", "waiting_client"] as Status[],
+  confirmed: ["confirmed", "shipped", "delivered", "returned"] as Status[],
+  cancelled: ["cancelled", "cancelled_client", "fake", "duplicate"] as Status[],
+};
+
+export const isStatus = (s: unknown): s is Status => typeof s === "string" && s in statuses;

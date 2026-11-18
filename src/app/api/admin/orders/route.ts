@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { dbSelect, dbUpdate } from "@/lib/db";
-import { statuses, type Order } from "@/lib/orders";
+import { dbSelect } from "@/lib/db";
+import { getAllProducts } from "@/lib/catalog";
+import { statuses, updateOrder, type Order } from "@/lib/orders";
+import { isStatus } from "@/lib/order-types";
 import { fail, guard } from "@/lib/admin-api";
 import { carrier } from "@/lib/ecotrack";
 
@@ -22,16 +24,22 @@ export async function GET(req: Request) {
     const all = await dbSelect<{ status: string }>("orders", { select: "status", limit: 5000 }, { fresh: true });
     const counts: Record<string, number> = { all: all.length };
     for (const o of all) counts[o.status] = (counts[o.status] || 0) + 1;
-    return NextResponse.json({ orders, counts, carrier: carrier.enabled });
+    const products = await getAllProducts(true);
+    const images = Object.fromEntries(products.map((p) => [p.id, p.images[0] || ""]));
+    return NextResponse.json({ orders: orders.map((o) => ({ ...o, image: images[o.product_id] || null })), counts, carrier: carrier.enabled });
   } catch (e) { return fail(e); }
 }
 
 export async function PATCH(req: Request) {
   const g = await guard(); if (g) return g;
-  const { id, status } = await req.json().catch(() => ({}));
-  if (typeof id !== "string" || !(status in statuses)) return NextResponse.json({ error: "معلومات غالطة" }, { status: 400 });
+  const { id, ids, status } = await req.json().catch(() => ({}));
+  const list: string[] = Array.isArray(ids) ? ids.filter((x: unknown) => typeof x === "string").slice(0, 200) : typeof id === "string" ? [id] : [];
+  if (!list.length || !isStatus(status)) return NextResponse.json({ error: "معلومات غالطة" }, { status: 400 });
   try {
-    await dbUpdate("orders", { id }, { status });
+    for (const oid of list) {
+      const [o] = await dbSelect<Order>("orders", { eq: { id: oid }, limit: 1 }, { fresh: true });
+      if (o && o.status !== status) await updateOrder(o, { status });
+    }
     return NextResponse.json({ ok: true });
   } catch (e) { return fail(e); }
 }

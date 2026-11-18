@@ -96,7 +96,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const label = "mb-1.5 block text-sm font-bold text-navy";
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Link href="/admin/products" className="rounded-xl bg-white px-3 py-2 font-bold ring-1 ring-line">→</Link>
         <h1 className="text-xl font-extrabold text-navy">{isNew ? "➕ منتج جديد" : "✏️ تعديل المنتج"}</h1>
@@ -170,8 +170,8 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
 
       {!isNew && <button type="button" onClick={remove} className="w-full rounded-xl py-3 font-bold text-sale ring-1 ring-sale/30">🗑️ حذف المنتج</button>}
 
-      <div className="fixed inset-x-0 bottom-16 z-20 border-t border-line bg-white/95 p-3 backdrop-blur md:bottom-0">
-        <div className="mx-auto max-w-5xl">
+      <div className="sticky bottom-0 z-20 -mx-4 border-t border-line bg-white/95 p-3 backdrop-blur md:-mx-6">
+        <div>
           {err && <p className="mb-2 rounded-xl bg-sale/10 p-2 text-sm font-semibold text-sale">{err}</p>}
           <button onClick={save} disabled={saving || uploading > 0} className="w-full rounded-xl bg-brand py-3.5 text-lg font-extrabold text-white disabled:opacity-50">
             {saving ? "جاري الحفظ..." : "💾 حفظ"}

@@ -5,6 +5,8 @@ export type Settings = {
   whatsapp: string; // صيغة دولية بلا + (213...)
   phone: string;
   fees: Fees;
+  pixels: { facebook: string; tiktok: string; snapchat: string };
+  blocked: { phones: string[]; ips: string[] };
   seeded?: boolean;
 };
 
@@ -12,6 +14,12 @@ const defaults = (): Settings => ({
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP || "",
   phone: process.env.NEXT_PUBLIC_PHONE || "",
   fees: {},
+  pixels: {
+    facebook: process.env.NEXT_PUBLIC_FB_PIXEL_ID || "",
+    tiktok: process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "",
+    snapchat: process.env.NEXT_PUBLIC_SNAP_PIXEL_ID || "",
+  },
+  blocked: { phones: [], ips: [] },
 });
 
 export async function getSettings(fresh = false): Promise<Settings> {
@@ -19,7 +27,16 @@ export async function getSettings(fresh = false): Promise<Settings> {
     const rows = await dbSelect<{ id: number; data: Partial<Settings> }>("settings", { eq: { id: 1 } }, { tags: ["settings"], fresh });
     const d = rows[0]?.data || {};
     const base = defaults();
-    return { ...base, ...d, whatsapp: d.whatsapp || base.whatsapp, phone: d.phone || base.phone, fees: d.fees || {} };
+    return {
+      ...base, ...d,
+      whatsapp: d.whatsapp || base.whatsapp, phone: d.phone || base.phone, fees: d.fees || {},
+      pixels: {
+        facebook: d.pixels?.facebook || base.pixels.facebook,
+        tiktok: d.pixels?.tiktok || base.pixels.tiktok,
+        snapchat: d.pixels?.snapchat || base.pixels.snapchat,
+      },
+      blocked: { phones: d.blocked?.phones || [], ips: d.blocked?.ips || [] },
+    };
   } catch (e) {
     if (hasSupabase) console.error("settings:", e);
     return defaults();

@@ -1,78 +1,78 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/components/admin/api";
-import type { Wilaya } from "@/lib/wilayas";
+import SaveBar from "@/components/admin/SaveBar";
 
-type Row = { code: number; name: string; home: string; desk: string };
+type S = { whatsapp: string; phone: string; pixels: { facebook: string; tiktok: string; snapchat: string }; blocked: { phones: string[]; ips: string[] } };
+
+const pixelHelp = [
+  { k: "facebook", label: "Facebook Pixel", icon: "📘", ph: "1234567890123456", url: "https://business.facebook.com/events_manager" },
+  { k: "tiktok", label: "TikTok Pixel", icon: "🎵", ph: "CABC12DEF34GH", url: "https://ads.tiktok.com/i18n/events_manager" },
+  { k: "snapchat", label: "Snapchat Pixel", icon: "👻", ph: "a1b2c3d4-xxxx-xxxx", url: "https://ads.snapchat.com" },
+] as const;
 
 export default function Settings() {
-  const [whatsapp, setWhatsapp] = useState("");
-  const [phone, setPhone] = useState("");
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [s, setS] = useState<S | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [bulk, setBulk] = useState({ home: "", desk: "" });
-
-  useEffect(() => {
-    api<{ whatsapp: string; phone: string; wilayas: Wilaya[] }>("/api/admin/settings").then((d) => {
-      setWhatsapp(d.whatsapp); setPhone(d.phone);
-      setRows(d.wilayas.map((w) => ({ code: w.code, name: w.name, home: String(w.home), desk: w.desk === null ? "" : String(w.desk) })));
-    }).catch((e) => setMsg({ ok: false, text: e.message }));
-  }, []);
-
-  if (!rows) return <p className="p-8 text-center text-muted">{msg?.text || "جاري التحميل..."}</p>;
-  const setRow = (code: number, k: "home" | "desk", v: string) => setRows(rows.map((r) => (r.code === code ? { ...r, [k]: v.replace(/\D/g, "") } : r)));
+  const load = () => api<S>("/api/admin/settings").then(setS).catch((e) => setMsg({ ok: false, text: e.message }));
+  useEffect(() => { load(); }, []);
+  if (!s) return <p className="p-8 text-center text-muted">{msg?.text || "جاري التحميل..."}</p>;
 
   async function save() {
     setSaving(true); setMsg(null);
-    const fees = Object.fromEntries(rows!.map((r) => [r.code, { home: Number(r.home || 0), desk: r.desk === "" ? null : Number(r.desk) }]));
-    try {
-      await api("/api/admin/settings", { method: "PUT", body: JSON.stringify({ whatsapp, phone, fees }) });
-      setMsg({ ok: true, text: "✅ تحفظ! الموقع تحدّث." });
-    } catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
+    try { await api("/api/admin/settings", { method: "PUT", body: JSON.stringify({ whatsapp: s!.whatsapp, phone: s!.phone, pixels: s!.pixels }) }); setMsg({ ok: true, text: "✅ تحفظ! الموقع تحدّث." }); }
+    catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
     setSaving(false);
+  }
+  async function unblock(kind: "phone" | "ip", v: string) {
+    try { await api("/api/admin/block", { method: "POST", body: JSON.stringify({ [kind]: v, unblock: true }) }); load(); } catch (e) { alert((e as Error).message); }
   }
 
   const input = "w-full rounded-xl border border-line bg-white px-3 py-2.5 text-base outline-none focus:border-brand";
+  const card = "space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line md:p-5";
   return (
-    <div className="space-y-4 pb-24">
-      <h1 className="text-xl font-extrabold text-navy">⚙️ الإعدادات</h1>
-      <section className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-line">
+    <div className="space-y-4">
+      <h1 className="text-2xl font-extrabold text-navy">⚙️ الإعدادات</h1>
+
+      <section className={card}>
         <h2 className="font-extrabold text-navy">📞 التواصل</h2>
-        <div><label className="mb-1 block text-sm font-bold">رقم الواتساب</label>
-          <input className={input} dir="ltr" inputMode="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="0555123456" />
-          <p className="mt-1 text-xs text-muted">زر الواتساب فالموقع يبعث لهاد الرقم</p></div>
-        <div><label className="mb-1 block text-sm font-bold">رقم الهاتف (يبان للزبائن)</label>
-          <input className={input} dir="ltr" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0555 12 34 56" /></div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-bold">رقم الواتساب<input className={input} dir="ltr" inputMode="tel" value={s.whatsapp} onChange={(e) => setS({ ...s, whatsapp: e.target.value })} placeholder="0555123456" /></label>
+          <label className="text-sm font-bold">رقم الهاتف (يبان للزبائن)<input className={input} dir="ltr" inputMode="tel" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} placeholder="0555 12 34 56" /></label>
+        </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-4 ring-1 ring-line">
-        <h2 className="font-extrabold text-navy">🚚 أسعار التوصيل</h2>
-        <p className="mb-3 text-xs text-muted">خلي «للمكتب» فارغ إذا ما كانش مكتب فالولاية</p>
-        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-xl bg-soft p-3">
-          <span className="w-full text-sm font-bold">تطبيق نفس السعر على كل الولايات:</span>
-          <input className={`${input} w-28`} inputMode="numeric" placeholder="للدار" value={bulk.home} onChange={(e) => setBulk({ ...bulk, home: e.target.value.replace(/\D/g, "") })} />
-          <input className={`${input} w-28`} inputMode="numeric" placeholder="للمكتب" value={bulk.desk} onChange={(e) => setBulk({ ...bulk, desk: e.target.value.replace(/\D/g, "") })} />
-          <button type="button" onClick={() => setRows(rows.map((r) => ({ ...r, home: bulk.home || r.home, desk: bulk.desk || r.desk })))} className="rounded-xl bg-navy px-4 py-2.5 text-sm font-bold text-white">تطبيق</button>
-        </div>
-        <div className="grid grid-cols-[1fr_5.5rem_5.5rem] items-center gap-2 text-sm">
-          <span className="font-bold text-muted">الولاية</span><span className="text-center font-bold text-muted">🏠 للدار</span><span className="text-center font-bold text-muted">🏢 للمكتب</span>
-          {rows.map((r) => (
-            <div key={r.code} className="contents">
-              <span className="truncate">{String(r.code).padStart(2, "0")} {r.name}</span>
-              <input className={`${input} px-2 text-center`} inputMode="numeric" value={r.home} onChange={(e) => setRow(r.code, "home", e.target.value)} />
-              <input className={`${input} px-2 text-center`} inputMode="numeric" value={r.desk} placeholder="—" onChange={(e) => setRow(r.code, "desk", e.target.value)} />
+      <section className={card}>
+        <h2 className="font-extrabold text-navy">🎯 البيكسلات</h2>
+        <p className="text-xs text-muted">حط رقم كل بيكسل. الموقع يبعث وحدو: زيارة، شاف منتج، بدا الطلب، وكمّل الطلب (مع السعر).</p>
+        {pixelHelp.map((p) => (
+          <div key={p.k}>
+            <div className="mb-1 flex items-center justify-between text-sm font-bold">
+              <span>{p.icon} {p.label} {s.pixels[p.k] && <span className="mr-1 rounded-full bg-ok/10 px-2 py-0.5 text-xs text-ok">● مفعّل</span>}</span>
+              <a href={p.url} target="_blank" rel="noopener" className="text-xs font-bold text-brand">وين نلقاه؟ ↗</a>
             </div>
-          ))}
-        </div>
+            <input className={input} dir="ltr" value={s.pixels[p.k]} placeholder={p.ph} onChange={(e) => setS({ ...s, pixels: { ...s.pixels, [p.k]: e.target.value.trim() } })} />
+          </div>
+        ))}
       </section>
 
-      <div className="fixed inset-x-0 bottom-16 z-20 border-t border-line bg-white/95 p-3 backdrop-blur md:bottom-0">
-        <div className="mx-auto max-w-5xl">
-          {msg && <p className={`mb-2 rounded-xl p-2 text-sm font-semibold ${msg.ok ? "bg-ok/10 text-ok" : "bg-sale/10 text-sale"}`}>{msg.text}</p>}
-          <button onClick={save} disabled={saving} className="w-full rounded-xl bg-brand py-3.5 text-lg font-extrabold text-white disabled:opacity-50">{saving ? "جاري الحفظ..." : "💾 حفظ"}</button>
-        </div>
-      </div>
+      <section className={card}>
+        <h2 className="font-extrabold text-navy">🚫 المحظورين</h2>
+        <p className="text-xs text-muted">المحظور يقدر يعمّر الفورم، بصح الطلبية ما توصلكش. تحظر من صفحة الطلبية.</p>
+        {s.blocked.phones.length + s.blocked.ips.length === 0 ? <p className="rounded-xl bg-soft p-4 text-center text-sm text-muted">ما كانش محظورين</p> : (
+          <ul className="divide-y divide-line rounded-xl ring-1 ring-line">
+            {[...s.blocked.phones.map((v) => ["phone", v] as const), ...s.blocked.ips.map((v) => ["ip", v] as const)].map(([k, v]) => (
+              <li key={k + v} className="flex items-center justify-between p-3 text-sm">
+                <span dir="ltr" className="font-bold">{k === "phone" ? "📱" : "🌐"} {v}</span>
+                <button onClick={() => unblock(k, v)} className="rounded-lg bg-soft px-3 py-1.5 text-xs font-bold">🔓 فك الحظر</button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <SaveBar onSave={save} saving={saving} msg={msg} />
     </div>
   );
 }

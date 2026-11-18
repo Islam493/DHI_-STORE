@@ -3,9 +3,9 @@ type W = typeof window & {
   fbq?: (...a: unknown[]) => void;
   ttq?: { track: (e: string, d?: object) => void };
   snaptr?: (...a: unknown[]) => void;
+  __px?: { fb: boolean; tt: boolean; sc: boolean };
 };
 
-import { store } from "./config";
 
 type Ev = "ViewContent" | "InitiateCheckout" | "Purchase";
 type Data = { id: string; name: string; value: number; quantity?: number };
@@ -14,8 +14,8 @@ type Data = { id: string; name: string; value: number; quantity?: number };
 export function track(event: Ev, data: Data, tries = 0) {
   if (typeof window === "undefined") return;
   const w = window as W;
-  const { facebook, tiktok, snapchat } = store.pixels;
-  const notReady = (facebook && !w.fbq) || (tiktok && !w.ttq) || (snapchat && !w.snaptr);
+  const px = w.__px || { fb: false, tt: false, sc: false };
+  const notReady = (px.fb && !w.fbq) || (px.tt && !w.ttq) || (px.sc && !w.snaptr);
   if (notReady && tries < 25) {
     setTimeout(() => track(event, data, tries + 1), 200);
     return;
