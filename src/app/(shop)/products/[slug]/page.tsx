@@ -13,6 +13,7 @@ import Faq from "@/components/Faq";
 import ContactBlock from "@/components/ContactBlock";
 import MotionShowcase from "@/components/MotionShowcase";
 import Reveal from "@/components/Reveal";
+import packs from "@/data/design-packs.json";
 import { discountPercent, getCategory, getProduct, getProducts, isLow, isOut, type Product } from "@/lib/catalog";
 import { formatPrice, store } from "@/lib/config";
 import { getSettings, getWilayas } from "@/lib/settings";
@@ -48,6 +49,9 @@ export default async function ProductPage({ params }: Props) {
   if (!p) notFound();
   const [all, wilayas, settings, productReviews, allReviews] = await Promise.all([getProducts(), getWilayas(), getSettings(), getReviews(p.id), getReviews()]);
   const L = p.landing;
+  // التصاميم الجداد فيهم الكتيبة، علاه الموشن ياخذ الصورة الحقيقية
+  const pack = (packs as Record<string, { images: string[]; photo: string }>)[p.slug];
+  const motionImage = pack && p.images.some((i) => pack.images.includes(i)) ? pack.photo : p.images[1] || p.images[0];
   const off = discountPercent(p);
   const cat = getCategory(p.category);
   const related = all.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 4);
@@ -68,7 +72,7 @@ export default async function ProductPage({ params }: Props) {
   ];
 
   return (
-    <div className="pb-24 md:pb-0">
+    <div className="pb-28">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ViewTracker id={p.id} name={p.name} value={p.price} />
 
@@ -140,7 +144,7 @@ export default async function ProductPage({ params }: Props) {
 
       {/* 3. الحل — موشن جرافيك بصورة المنتج الحقيقية */}
       {L?.benefits.length ? (
-        <MotionShowcase image={p.images[1] || p.images[0]} name={p.name} headline={`كيفاش ${p.name.split("–")[0].trim()} يريّحلك بالك؟`} benefits={L.benefits} scan={p.category.startsWith("cameras") || p.category === "hidden"} />
+        <MotionShowcase image={motionImage} name={p.name} headline={`كيفاش ${p.name.split("–")[0].trim()} يريّحلك بالك؟`} benefits={L.benefits} scan={p.category.startsWith("cameras") || p.category === "hidden"} />
       ) : null}
 
       {/* 4. المميزات */}
@@ -288,9 +292,9 @@ export default async function ProductPage({ params }: Props) {
         <RecentlyViewed current={p.slug} all={all.map((x) => ({ slug: x.slug, name: x.name, image: x.images[0], price: x.price }))} />
       </div>
 
-      {/* 12. شريط الشراء فالتيليفون */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 p-3 backdrop-blur md:hidden">
-        <a href="#order" className="flex items-center justify-between rounded-2xl bg-brand px-5 py-3 font-extrabold text-white">
+      {/* 12. شريط الشراء: ديما ظاهر من الدخول حتى الأخير (تيليفون وكمبيوتر) */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 p-3 backdrop-blur md:inset-x-auto md:bottom-5 md:left-1/2 md:w-[34rem] md:-translate-x-1/2 md:rounded-3xl md:border md:shadow-2xl">
+        <a href="#order" className="cta-nudge cta-shine flex items-center justify-between rounded-2xl bg-brand px-5 py-3 font-extrabold text-white shadow-lg shadow-brand/30 md:py-3.5 md:text-lg">
           <span className="leading-tight">{isOut(p) ? "نفذ المخزون" : "اطلب الآن"}<span className="block text-[11px] font-semibold opacity-80">{isOut(p) ? "راسلنا على الواتساب" : "💵 الدفع عند الاستلام"}</span></span>
           <span className="text-left">{formatPrice(p.price)}{off > 0 && <span className="block text-[11px] font-semibold line-through opacity-70">{formatPrice(p.compareAtPrice!)}</span>}</span>
         </a>
