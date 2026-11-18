@@ -1,59 +1,11 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { dbInsert } from "./db";
 
-export type Order = {
-  id: string;
-  created_at: string;
-  status: "new";
-  customer_name: string;
-  phone: string;
-  wilaya_code: number;
-  wilaya_name: string;
-  commune: string;
-  address: string;
-  delivery_method: "home" | "desk";
-  product_id: string;
-  product_name: string;
-  variant: string | null;
-  quantity: number;
-  unit_price: number;
-  shipping_fee: number;
-  total: number;
-  note: string;
-  ip: string | null;
-};
-
-const SUPABASE_URL = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+export * from "./order-types";
+import type { Order } from "./order-types";
 
 // يحفظ الطلبية: فـ Supabase إذا كان مربوط، وإلا فملف محلي (للتجربة على الكمبيوتر برك)
 export async function saveOrder(order: Order) {
-  if (SUPABASE_URL && SUPABASE_KEY) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_KEY,
-        // المفاتيح الجديدة (sb_secret_...) تتبعث غير فـ apikey، والقدام (JWT) فـ Authorization تاني
-        ...(SUPABASE_KEY.startsWith("sb_") ? {} : { Authorization: `Bearer ${SUPABASE_KEY}` }),
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify(order),
-    });
-    if (!res.ok) throw new Error(`Supabase error ${res.status}: ${await res.text()}`);
-    return;
-  }
-  if (process.env.NODE_ENV === "production" && process.env.VERCEL) {
-    throw new Error("Supabase is not configured");
-  }
-  const file = path.join(process.cwd(), "data", "orders.local.json");
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  let list: Order[] = [];
-  try {
-    list = JSON.parse(await fs.readFile(file, "utf8"));
-  } catch {}
-  list.unshift(order);
-  await fs.writeFile(file, JSON.stringify(list, null, 2));
+  await dbInsert("orders", order);
 }
 
 // إشعار تيليغرام فوري كي تجي طلبية

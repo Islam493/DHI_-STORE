@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { store, whatsappLink } from "@/lib/config";
+import { getSettings, waLink } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "اتصل بنا" };
 
-export default function Contact() {
-  const wa = whatsappLink("السلام عليكم");
+export default async function Contact() {
+  const store = await getSettings();
+  const wa = waLink(store.whatsapp, "السلام عليكم");
   return (
     <div className="mx-auto max-w-xl px-4 py-12 text-center">
       <h1 className="text-3xl font-extrabold text-navy">اتصل بنا</h1>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProduct } from "@/lib/catalog";
-import { getWilaya, shippingFee } from "@/lib/wilayas";
+import { getWilayas } from "@/lib/settings";
 import { saveOrder, notifyTelegram, type Order } from "@/lib/orders";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
@@ -38,12 +38,12 @@ export async function POST(req: Request) {
   const errors: Record<string, string> = {};
   if (name.length < 3) errors.name = "دخّل الاسم الكامل";
   if (!/^0[567]\d{8}$/.test(phone)) errors.phone = "رقم الهاتف لازم يبدا بـ 05 / 06 / 07 وفيه 10 أرقام";
-  const wilaya = getWilaya(wilayaCode);
+  const wilaya = (await getWilayas()).find((w) => w.code === wilayaCode);
   if (!wilaya) errors.wilaya = "اختار الولاية";
   if (commune.length < 2) errors.commune = "دخّل البلدية";
   if (method === "home" && address.length < 3) errors.address = "دخّل العنوان";
 
-  const product = getProduct(clean(body.product, 100));
+  const product = await getProduct(clean(body.product, 100));
   if (!product) return NextResponse.json({ error: "المنتج غير متوفر" }, { status: 400 });
 
   let unitPrice = product.price;
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     else { unitPrice = v.price; variant = v.name; }
   }
 
-  const fee = wilaya ? shippingFee(wilaya.code, method) : null;
+  const fee = wilaya ? (method === "desk" ? wilaya.desk : wilaya.home) : null;
   if (wilaya && fee === null) errors.method = "ما كانش مكتب فهاد الولاية، اختار التوصيل للدار";
 
   if (Object.keys(errors).length) return NextResponse.json({ errors }, { status: 422 });

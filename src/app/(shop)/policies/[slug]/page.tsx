@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { wilayas } from "@/lib/wilayas";
+import { getWilayas } from "@/lib/settings";
 import { formatPrice } from "@/lib/config";
 
 const pages = {
@@ -36,6 +36,7 @@ export default async function Policy({ params }: Props) {
   const slug = (await params).slug as keyof typeof pages;
   const p = pages[slug];
   if (!p) notFound();
+  const wilayas = await getWilayas();
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-6 text-3xl font-extrabold text-navy">{p.title}</h1>

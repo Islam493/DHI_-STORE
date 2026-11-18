@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import Trust from "@/components/Trust";
-import { categories, getProducts, productsIn } from "@/lib/catalog";
+import { categories, getProducts } from "@/lib/catalog";
 
 const faqs = [
   ["كيفاش نخلص؟", "تخلص كي توصلك السلعة (الدفع عند الاستلام). ما تخلص حتى دورو قبل."],
@@ -12,8 +12,8 @@ const faqs = [
   ["إذا جاتني فيها مشكلة؟", "إذا كان عيب مصنع نبدلوهالك. شوف صفحة الإرجاع والاستبدال."],
 ];
 
-export default function Home() {
-  const products = getProducts();
+export default async function Home() {
+  const products = await getProducts();
   const hero = products.find((p) => p.slug === "bulb-camera-360") ?? products[0];
   return (
     <>
@@ -32,9 +32,9 @@ export default function Home() {
               <span>✅ الدفع عند الاستلام</span><span>✅ 58 ولاية</span><span>✅ ضمان</span>
             </div>
           </div>
-          <Link href={`/products/${hero.slug}`} className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-[2rem] ring-8 ring-white/10">
+          {hero && <Link href={`/products/${hero.slug}`} className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-[2rem] ring-8 ring-white/10">
             <Image src={hero.images[0]} alt={hero.name} fill priority sizes="(max-width:768px) 100vw, 450px" className="object-cover" />
-          </Link>
+          </Link>}
         </div>
       </section>
 
@@ -47,7 +47,7 @@ export default function Home() {
             <Link key={c.slug} href={`/category/${c.slug}`} className="rounded-2xl border border-line bg-soft p-4 text-center transition hover:border-brand hover:bg-white">
               <span className="text-3xl">{c.icon}</span>
               <p className="mt-2 text-sm font-extrabold text-navy">{c.name}</p>
-              <p className="text-xs text-muted">{productsIn(c.slug).length} منتج</p>
+              <p className="text-xs text-muted">{products.filter((p) => p.category === c.slug).length} منتج</p>
             </Link>
           ))}
         </div>

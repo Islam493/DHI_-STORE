@@ -1,7 +1,7 @@
-import { whatsappLink } from "@/lib/config";
+import { getSettings, waLink } from "@/lib/settings";
 
-export default function WhatsAppFloat() {
-  const wa = whatsappLink("السلام عليكم، عندي سؤال على منتج");
+export default async function WhatsAppFloat() {
+  const wa = waLink((await getSettings()).whatsapp, "السلام عليكم، عندي سؤال على منتج");
   if (!wa) return null;
   return (
     <a href={wa} target="_blank" rel="noopener" aria-label="راسلنا على واتساب"

@@ -29,14 +29,11 @@ const list: [number, string, keyof typeof Z][] = [
   [57, "المغير", "south"], [58, "المنيعة", "south"],
 ];
 
-export const wilayas: Wilaya[] = list.map(([code, name, z]) => ({ code, name, ...Z[z] }));
+// الأسعار الافتراضية — تتبدل من لوحة التحكم (الإعدادات)
+export const defaultWilayas: Wilaya[] = list.map(([code, name, z]) => ({ code, name, ...Z[z] }));
 
-export function getWilaya(code: number) {
-  return wilayas.find((w) => w.code === code);
-}
+export type Fees = Record<string, { home: number; desk: number | null }>;
 
-export function shippingFee(code: number, method: "home" | "desk") {
-  const w = getWilaya(code);
-  if (!w) return null;
-  return method === "desk" ? w.desk : w.home;
+export function withFees(fees: Fees = {}): Wilaya[] {
+  return defaultWilayas.map((w) => ({ ...w, ...(fees[w.code] || {}) }));
 }

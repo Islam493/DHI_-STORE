@@ -3,11 +3,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { track } from "@/lib/track";
-import { formatPrice, whatsappLink } from "@/lib/config";
+import { formatPrice } from "@/lib/config";
 
 type Last = { id: string; total: number; pid: string; name: string; qty: number };
 
-export default function ThankYou() {
+export default function ThankYou({ whatsapp }: { whatsapp: string }) {
   const id = useSearchParams().get("id");
   const [order, setOrder] = useState<Last | null>(null);
 
@@ -27,7 +27,8 @@ export default function ThankYou() {
     } catch {}
   }, [id]);
 
-  const wa = whatsappLink(`السلام عليكم، درت طلبية رقم ${id ?? ""}`);
+  const n = whatsapp.replace(/\D/g, "").replace(/^0/, "213");
+  const wa = n ? `https://wa.me/${n}?text=${encodeURIComponent(`السلام عليكم، درت طلبية رقم ${id ?? ""}`)}` : null;
   return (
     <div className="mx-auto max-w-xl px-4 py-16 text-center">
       <div className="mx-auto grid size-20 place-items-center rounded-full bg-ok/10 text-4xl">✅</div>

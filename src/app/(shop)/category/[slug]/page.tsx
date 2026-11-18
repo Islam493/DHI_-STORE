@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CategoryPage({ params }: Props) {
   const c = getCategory((await params).slug);
   if (!c) notFound();
-  const list = productsIn(c.slug);
+  const list = await productsIn(c.slug);
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-2 text-sm text-muted"><Link href="/" className="hover:text-brand">الرئيسية</Link> / {c.name}</nav>

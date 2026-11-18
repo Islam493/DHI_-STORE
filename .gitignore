@@ -39,5 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-/data/orders.local.json
+/data/
 !.env.example
+/public/uploads/

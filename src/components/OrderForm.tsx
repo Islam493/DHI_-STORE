@@ -1,14 +1,14 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { wilayas } from "@/lib/wilayas";
+import type { Wilaya } from "@/lib/wilayas";
 import { formatPrice } from "@/lib/config";
 import { track } from "@/lib/track";
 import type { Product } from "@/lib/catalog";
 
 type Errors = Record<string, string>;
 
-export default function OrderForm({ product }: { product: Product }) {
+export default function OrderForm({ product, wilayas }: { product: Product; wilayas: Wilaya[] }) {
   const router = useRouter();
   const [variant, setVariant] = useState(product.variants[0]?.name ?? "");
   const [qty, setQty] = useState(1);

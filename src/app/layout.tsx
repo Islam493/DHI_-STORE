@@ -1,10 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import WhatsAppFloat from "@/components/WhatsAppFloat";
-import Pixels from "@/components/Pixels";
 import { store } from "@/lib/config";
 
 const cairo = Cairo({ subsets: ["arabic", "latin"], variable: "--font-cairo", display: "swap" });
@@ -21,13 +17,7 @@ export const viewport: Viewport = { themeColor: "#0b1f3a" };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
-      <body className="font-sans">
-        <Header />
-        <main>{children}</main>
-        <Footer />
-        <WhatsAppFloat />
-        <Pixels />
-      </body>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }

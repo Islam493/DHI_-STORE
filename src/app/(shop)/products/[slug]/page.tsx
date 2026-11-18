@@ -8,30 +8,32 @@ import Trust from "@/components/Trust";
 import ViewTracker from "@/components/ViewTracker";
 import { discountPercent, getCategory, getProduct, getProducts, productsIn } from "@/lib/catalog";
 import { formatPrice, store } from "@/lib/config";
+import { getWilayas } from "@/lib/settings";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export function generateStaticParams() {
-  return getProducts().map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  return (await getProducts()).map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const p = getProduct((await params).slug);
+  const p = await getProduct((await params).slug);
   if (!p) return {};
   const description = p.description.slice(0, 3).join(" ").slice(0, 160);
   return { title: p.name, description, openGraph: { title: p.name, description, images: [p.images[0]] } };
 }
 
 export default async function ProductPage({ params }: Props) {
-  const p = getProduct((await params).slug);
+  const p = await getProduct((await params).slug);
   if (!p) notFound();
   const off = discountPercent(p);
   const cat = getCategory(p.category);
-  const related = productsIn(p.category).filter((x) => x.slug !== p.slug).slice(0, 4);
+  const related = (await productsIn(p.category)).filter((x) => x.slug !== p.slug).slice(0, 4);
+  const wilayas = await getWilayas();
 
   const jsonLd = {
     "@context": "https://schema.org", "@type": "Product", name: p.name,
-    image: p.images.map((i) => `${store.url}${i}`), description: p.description.join(" ").slice(0, 500),
+    image: p.images.map((i) => (i.startsWith("http") ? i : `${store.url}${i}`)), description: p.description.join(" ").slice(0, 500),
     brand: { "@type": "Brand", name: store.name },
     offers: { "@type": "Offer", priceCurrency: "DZD", price: p.price, availability: "https://schema.org/InStock", url: `${store.url}/products/${p.slug}` },
   };
@@ -59,7 +61,7 @@ export default async function ProductPage({ params }: Props) {
           </div>
           <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-ok"><span className="size-2 rounded-full bg-ok" /> متوفر — يتبعث فـ 24 ساعة</p>
 
-          <div className="my-6"><OrderForm product={p} /></div>
+          <div className="my-6"><OrderForm product={p} wilayas={wilayas} /></div>
           <Trust compact />
         </div>
       </div>
