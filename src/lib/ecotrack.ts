@@ -1,5 +1,5 @@
 // ربط مع شركة التوصيل World Express (منصة EcoTrack)
-const BASE = (process.env.ECOTRACK_URL?.trim() || "https://worldexpress.ecotrack.dz").replace(/\/+$/, "");
+const BASE = (process.env.ECOTRACK_URL?.trim() || "https://world-express.ecotrack.dz").replace(/\/+$/, "");
 const TOKEN = process.env.ECOTRACK_TOKEN?.trim();
 
 export const carrier = { name: "World Express", enabled: Boolean(TOKEN), trackUrl: (t: string) => `https://suivi.ecotrack.dz/suivi/${encodeURIComponent(t)}` };
