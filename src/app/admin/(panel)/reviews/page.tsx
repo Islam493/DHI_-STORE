@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { confirmAction, toast } from "@/components/admin/ui";
 import { api, timeAgo } from "@/components/admin/api";
 import { uploadFile } from "@/components/admin/upload";
 import type { Review } from "@/lib/review-types";
@@ -35,12 +36,12 @@ export default function Reviews() {
     setBusy(false);
   }
   async function toggle(r: Review) {
-    await api(`/api/admin/reviews/${r.id}`, { method: "PUT", body: JSON.stringify({ visible: !r.visible }) }).catch((e) => alert(e.message));
+    await api(`/api/admin/reviews/${r.id}`, { method: "PUT", body: JSON.stringify({ visible: !r.visible }) }).catch((e) => toast(e.message, false));
     load();
   }
   async function remove(r: Review) {
-    if (!confirm("تحذف هاد الرأي؟")) return;
-    await api(`/api/admin/reviews/${r.id}`, { method: "DELETE" }).catch((e) => alert(e.message));
+    if (!(await confirmAction("تحذف هاد الرأي؟"))) return;
+    await api(`/api/admin/reviews/${r.id}`, { method: "DELETE" }).catch((e) => toast(e.message, false));
     load();
   }
 

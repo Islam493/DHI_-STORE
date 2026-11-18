@@ -3,7 +3,7 @@ import { uploadImage } from "@/lib/db";
 import { fail, guard } from "@/lib/admin-api";
 
 export async function POST(req: Request) {
-  const g = await guard(); if (g) return g;
+  const g = await guard(["products.edit", "reviews.edit"]); if (g) return g;
   try {
     const form = await req.formData();
     const file = form.get("file");

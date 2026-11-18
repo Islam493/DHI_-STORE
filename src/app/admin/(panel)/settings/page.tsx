@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { toast } from "@/components/admin/ui";
 import { api } from "@/components/admin/api";
 import SaveBar from "@/components/admin/SaveBar";
 
@@ -7,7 +8,7 @@ type Content = {
   successOrders: number | null; announcement: string[]; socials: { facebook: string; instagram: string; tiktok: string };
   warranty: string; delivery: string[]; returns: string[]; faqs: { q: string; a: string }[];
 };
-type S = { whatsapp: string; phone: string; pixels: { facebook: string; tiktok: string; snapchat: string }; blocked: { phones: string[]; ips: string[] }; content: Content };
+type S = { whatsapp: string; whatsapp2: string; phone: string; phone2: string; pixels: { facebook: string; tiktok: string; snapchat: string }; blocked: { phones: string[]; ips: string[] }; content: Content };
 
 const pixelHelp = [
   { k: "facebook", label: "Facebook Pixel", icon: "📘", ph: "1234567890123456", url: "https://business.facebook.com/events_manager" },
@@ -25,12 +26,12 @@ export default function Settings() {
 
   async function save() {
     setSaving(true); setMsg(null);
-    try { await api("/api/admin/settings", { method: "PUT", body: JSON.stringify({ whatsapp: s!.whatsapp, phone: s!.phone, pixels: s!.pixels, content: s!.content }) }); setMsg({ ok: true, text: "✅ تحفظ! الموقع تحدّث." }); }
+    try { await api("/api/admin/settings", { method: "PUT", body: JSON.stringify({ whatsapp: s!.whatsapp, whatsapp2: s!.whatsapp2, phone: s!.phone, phone2: s!.phone2, pixels: s!.pixels, content: s!.content }) }); setMsg({ ok: true, text: "✅ تحفظ! الموقع تحدّث." }); }
     catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
     setSaving(false);
   }
   async function unblock(kind: "phone" | "ip", v: string) {
-    try { await api("/api/admin/block", { method: "POST", body: JSON.stringify({ [kind]: v, unblock: true }) }); load(); } catch (e) { alert((e as Error).message); }
+    try { await api("/api/admin/block", { method: "POST", body: JSON.stringify({ [kind]: v, unblock: true }) }); load(); } catch (e) { toast((e as Error).message, false); }
   }
 
   const input = "w-full rounded-xl border border-line bg-white px-3 py-2.5 text-base outline-none focus:border-brand";
@@ -47,8 +48,10 @@ export default function Settings() {
       <section className={card}>
         <h2 className="font-extrabold text-navy">📞 التواصل</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm font-bold">رقم الواتساب<input className={input} dir="ltr" inputMode="tel" value={s.whatsapp} onChange={(e) => setS({ ...s, whatsapp: e.target.value })} placeholder="0555123456" /></label>
-          <label className="text-sm font-bold">رقم الهاتف (يبان للزبائن)<input className={input} dir="ltr" inputMode="tel" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} placeholder="0555 12 34 56" /></label>
+          <label className="text-sm font-bold">📞 الهاتف الأول<input className={input} dir="ltr" inputMode="tel" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} placeholder="0563758499" /></label>
+          <label className="text-sm font-bold">📞 الهاتف الثاني<input className={input} dir="ltr" inputMode="tel" value={s.phone2} onChange={(e) => setS({ ...s, phone2: e.target.value })} placeholder="0561389326" /></label>
+          <label className="text-sm font-bold">💬 واتساب 1<input className={input} dir="ltr" inputMode="tel" value={s.whatsapp} onChange={(e) => setS({ ...s, whatsapp: e.target.value })} placeholder="0563758499" /></label>
+          <label className="text-sm font-bold">💬 واتساب 2<input className={input} dir="ltr" inputMode="tel" value={s.whatsapp2} onChange={(e) => setS({ ...s, whatsapp2: e.target.value })} placeholder="0561389326" /></label>
         </div>
       </section>
 
@@ -115,6 +118,15 @@ export default function Settings() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className={card}>
+        <h2 className="font-extrabold text-navy">💾 النسخة الاحتياطية</h2>
+        <p className="text-sm text-muted">نزّل نسخة كاملة (الطلبيات، المنتجات، الإعدادات، الآراء، المخزون، ملاحظات الزبائن) وحفظها عندك. ديرها مرة فالأسبوع.</p>
+        <div className="flex flex-wrap gap-2">
+          <a href="/api/admin/backup" download className="rounded-xl bg-navy px-4 py-2.5 text-sm font-bold text-white">💾 نزّل النسخة الاحتياطية (JSON)</a>
+          <a href="/api/admin/orders/export" download className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-navy ring-1 ring-line">⬇️ كل الطلبيات (Excel)</a>
+        </div>
       </section>
 
       <SaveBar onSave={save} saving={saving} msg={msg} />

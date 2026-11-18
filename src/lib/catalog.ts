@@ -32,12 +32,18 @@ export type Product = {
   description: string[];
   sort?: number;
   landing?: Landing;
+  stock?: number | null; // فارغ = ما نتبعوش المخزون
+  lowStock?: number | null;
+  sku?: string | null;
+  cost?: number | null; // سعر الشراء (للمدير برك)
+  featured?: boolean;
 };
 
 export type ProductRow = {
   id: string; slug: string; name: string; tagline: string | null; category: string; active: boolean;
   price: number; compare_at_price: number | null; variants: Variant[]; images: string[];
   description: string; sort: number; landing?: Landing | null;
+  stock?: number | null; low_stock?: number | null; sku?: string | null; cost?: number | null; featured?: boolean;
 };
 
 export { categories } from "./categories";
@@ -50,6 +56,11 @@ export const toRow = (p: Product): ProductRow => ({
   price: p.price, compare_at_price: p.compareAtPrice, variants: p.variants || [], images: p.images || [],
   description: (p.description || []).join("\n"), sort: p.sort ?? 0,
   ...(p.landing ? { landing: p.landing } : {}),
+  ...(p.stock !== undefined ? { stock: p.stock } : {}),
+  ...(p.lowStock !== undefined ? { low_stock: p.lowStock } : {}),
+  ...(p.sku !== undefined ? { sku: p.sku } : {}),
+  ...(p.cost !== undefined ? { cost: p.cost } : {}),
+  ...(p.featured !== undefined ? { featured: p.featured } : {}),
 });
 
 export const fromRow = (r: ProductRow): Product => ({
@@ -57,7 +68,17 @@ export const fromRow = (r: ProductRow): Product => ({
   price: r.price, compareAtPrice: r.compare_at_price, variants: r.variants || [], images: r.images || [],
   description: (r.description || "").split("\n").map((l) => l.trim()).filter(Boolean), sort: r.sort,
   landing: r.landing && r.landing.headline ? r.landing : landings[r.slug],
+  stock: typeof r.stock === "number" ? r.stock : null,
+  lowStock: typeof r.low_stock === "number" ? r.low_stock : null,
+  sku: r.sku || null,
+  cost: typeof r.cost === "number" ? r.cost : null,
+  featured: !!r.featured,
 });
+
+// المتجر ما يشوفش سعر الشراء
+export const publicProduct = (p: Product): Product => ({ ...p, cost: undefined });
+export const isOut = (p: Product) => typeof p.stock === "number" && p.stock <= 0;
+export const isLow = (p: Product) => typeof p.stock === "number" && p.stock > 0 && p.stock <= (p.lowStock ?? 3);
 
 // كل المنتجات (حتى المخبيين). قبل ما تتنقل لقاعدة البيانات، نستعملو المنتجات القديمة.
 export async function getAllProducts(fresh = false): Promise<Product[]> {
@@ -73,7 +94,7 @@ export async function getAllProducts(fresh = false): Promise<Product[]> {
 }
 
 export async function getProducts() {
-  return (await getAllProducts()).filter((p) => p.active && p.price > 0 && p.images.length > 0);
+  return (await getAllProducts()).filter((p) => p.active && p.price > 0 && p.images.length > 0).map(publicProduct);
 }
 
 export async function getProduct(slug: string) {
@@ -97,12 +118,19 @@ export function discountPercent(p: { price: number; compareAtPrice: number | nul
 // الأكثر طلبا: من الطلبيات الحقيقية (آخر 90 يوم). إذا ما كانش بيانات → null
 export async function bestSellerIds(): Promise<string[] | null> {
   try {
-    const { dbSelect } = await import("./db");
-    const since = new Date(Date.now() - 90 * 86400_000).toISOString();
-    const rows = await dbSelect<{ product_id: string }>("orders", { select: "product_id", gte: { created_at: since }, limit: 20000 }, { tags: ["bestsellers"] });
+    const { dbRpc, dbSelect } = await import("./db");
+    const D = 86400_000;
+    const from = new Date(Math.floor(Date.now() / D) * D - 90 * D).toISOString();
+    const to = new Date(Math.floor(Date.now() / D) * D + D).toISOString();
+    const r = await dbRpc<{ product_id: string; orders: number }[]>("dhi_products", { p_from: from, p_to: to }, { revalidate: 3600, tags: ["bestsellers"] });
+    if (r) {
+      const total = r.reduce((a, x) => a + Number(x.orders), 0);
+      return total >= 5 ? r.sort((a, b) => Number(b.orders) - Number(a.orders)).map((x) => x.product_id) : null;
+    }
+    const rows = await dbSelect<{ product_id: string }>("orders", { select: "product_id", gte: { created_at: from }, limit: 1000 }, { tags: ["bestsellers"] });
     if (rows.length < 5) return null;
     const by = new Map<string, number>();
-    for (const r of rows) by.set(r.product_id, (by.get(r.product_id) || 0) + 1);
+    for (const x of rows) by.set(x.product_id, (by.get(x.product_id) || 0) + 1);
     return [...by.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
   } catch {
     return null;
@@ -129,5 +157,6 @@ export function sortProducts(list: Product[], sort: SortKey) {
   if (sort === "price-asc") l.sort((a, b) => a.price - b.price);
   if (sort === "price-desc") l.sort((a, b) => b.price - a.price);
   if (sort === "discount") l.sort((a, b) => discountPercent(b) - discountPercent(a));
+  if (sort === "featured") l.sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
   return l;
 }

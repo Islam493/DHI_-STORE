@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, fmt, timeAgo } from "@/components/admin/api";
 import StatusPicker from "@/components/admin/StatusPicker";
 import ShipPanel from "@/components/admin/ShipPanel";
+import { confirmAction, toast, useCan } from "@/components/admin/ui";
 import { statuses, type Order, type Status } from "@/lib/order-types";
 import type { Wilaya } from "@/lib/wilayas";
 
@@ -23,6 +24,8 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   const [carrier, setCarrier] = useState(false);
   const [ship, setShip] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [inote, setInote] = useState<string | null>(null);
+  const can = useCan();
 
   const load = () => api<Data>(`/api/admin/orders/${id}`).then((r) => { setD(r); setCarrier(r.carrier); }).catch((e) => setErr(e.message));
   useEffect(() => {
@@ -36,8 +39,8 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
-    try { const r = await api<{ order: Order }>(`/api/admin/orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }); setD((cur) => cur && { ...cur, order: r.order }); await load(); return true; }
-    catch (e) { alert((e as Error).message); return false; }
+    try { const r = await api<{ order: Order }>(`/api/admin/orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }); setD((cur) => cur && { ...cur, order: r.order }); toast("تحفظ"); return true; }
+    catch (e) { toast((e as Error).message, false); return false; }
     finally { setBusy(false); }
   }
 
@@ -51,14 +54,14 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   }
 
   async function block(kind: "phone" | "ip", unblock: boolean) {
-    if (!unblock && !confirm(kind === "phone" ? `تحظر الرقم ${o.phone}؟ ما يقدرش يطلب مرة أخرى.` : `تحظر الـ IP ${o.ip}؟`)) return;
-    try { await api("/api/admin/block", { method: "POST", body: JSON.stringify({ [kind]: kind === "phone" ? o.phone : o.ip, unblock }) }); load(); }
-    catch (e) { alert((e as Error).message); }
+    if (!unblock && !(await confirmAction(kind === "phone" ? `تحظر الرقم ${o.phone}؟ الطلبيات الجاية منو ما يوصلوكش.` : `تحظر الـ IP ${o.ip}؟`))) return;
+    try { await api("/api/admin/block", { method: "POST", body: JSON.stringify({ [kind]: kind === "phone" ? o.phone : o.ip, unblock }) }); toast(unblock ? "تفك الحظر" : "تحظر"); load(); }
+    catch (e) { toast((e as Error).message, false); }
   }
 
   async function remove() {
-    if (!confirm("تحذف هاد الطلبية نهائياً؟")) return;
-    try { await api(`/api/admin/orders/${id}`, { method: "DELETE" }); router.push("/admin/orders"); } catch (e) { alert((e as Error).message); }
+    if (!(await confirmAction("تحذف هاد الطلبية نهائياً؟ ما تقدرش ترجعها (الأفضل تبدلها لـ «ملغاة»)."))) return;
+    try { await api(`/api/admin/orders/${id}`, { method: "DELETE" }); toast("تحذفت"); router.push("/admin/orders"); } catch (e) { toast((e as Error).message, false); }
   }
 
   const input = "w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-brand";
@@ -78,13 +81,14 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         <div className="-mt-10 flex flex-col items-center px-4 pb-5 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {d.image ? <img src={d.image} alt="" className="size-20 rounded-full object-cover ring-4 ring-white" /> : <span className="size-20 rounded-full bg-soft ring-4 ring-white" />}
-          <h1 className="mt-2 text-xl font-extrabold text-navy">{o.customer_name}</h1>
+          <h1 className="mt-2 text-xl font-extrabold text-navy"><Link href={`/admin/customers/${o.phone}`} className="hover:text-brand">{o.customer_name} ↗</Link></h1>
           <p className="text-xs text-muted"><span dir="ltr">#{o.id}</span> · {fullDate(o.created_at)}</p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <StatusPicker value={o.status} disabled={busy} onPick={(s) => patch({ status: s })} />
             <a href={`tel:${o.phone}`} className="rounded-full bg-navy px-4 py-1.5 text-xs font-bold text-white">📞 اتصل</a>
             <a href={wa} target="_blank" rel="noopener" className="rounded-full bg-wa px-4 py-1.5 text-xs font-bold text-white">💬 واتساب</a>
             {!edit && <button onClick={startEdit} className="rounded-full bg-soft px-4 py-1.5 text-xs font-bold text-navy ring-1 ring-line">✏️ تعديل</button>}
+            <a href={`/admin/print?ids=${o.id}`} target="_blank" className="rounded-full bg-soft px-4 py-1.5 text-xs font-bold text-navy ring-1 ring-line">🖨️ طباعة</a>
           </div>
         </div>
       </section>
@@ -152,6 +156,15 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         </div>
       )}
 
+      <section className="rounded-2xl bg-amber-50 p-4 shadow-sm ring-1 ring-amber-200">
+        <h2 className="mb-2 font-extrabold text-amber-900">📝 ملاحظة داخلية <span className="text-xs font-normal">(للفريق برك، الزبون ما يشوفهاش)</span></h2>
+        <textarea rows={2} value={inote ?? o.internal_note ?? ""} onChange={(e) => setInote(e.target.value)} placeholder="مثلا: عيطلو العشية، يحب يستلم السبت..."
+          className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500" />
+        {inote !== null && inote !== (o.internal_note ?? "") && (
+          <button disabled={busy} onClick={async () => { if (await patch({ internal_note: inote })) setInote(null); }} className="mt-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white">💾 حفظ الملاحظة</button>
+        )}
+      </section>
+
       <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
         <h2 className="mb-2 font-extrabold text-navy">🚚 التوصيل (World Express)</h2>
         {o.tracking ? (
@@ -175,7 +188,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
               <li key={i} className="relative">
                 <span className="absolute -right-[29px] top-0.5 grid size-6 place-items-center rounded-full bg-white text-sm ring-2 ring-line">{st.icon}</span>
                 <p className="text-sm font-bold">{h.s === "new" && i === 0 ? "إستلام الطلب" : st.label}</p>
-                <p className="text-xs text-muted" dir="ltr">{fullDate(h.at)}</p>
+                <p className="text-xs text-muted"><span dir="ltr">{fullDate(h.at)}</span>{(h as { by?: string }).by && <> · 👤 {(h as { by?: string }).by}</>}</p>
               </li>
             );
           })}
@@ -189,7 +202,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         {o.ip && <button onClick={() => block("ip", d.blocked.ip)} className={`rounded-xl px-4 py-2.5 text-sm font-bold ring-1 ${d.blocked.ip ? "bg-sale text-white ring-sale" : "text-sale ring-sale/40"}`}>
           {d.blocked.ip ? "🔓 فك حظر الـ IP" : "🚫 حظر الـ IP"}
         </button>}
-        <button onClick={remove} className="mr-auto rounded-xl px-4 py-2.5 text-sm font-bold text-muted ring-1 ring-line hover:text-sale">🗑️ حذف الطلبية</button>
+        {can("orders.delete") && <button onClick={remove} className="mr-auto rounded-xl px-4 py-2.5 text-sm font-bold text-muted ring-1 ring-line hover:text-sale">🗑️ حذف الطلبية</button>}
       </section>
     </div>
   );

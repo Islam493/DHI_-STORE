@@ -1,6 +1,17 @@
 import { dbSelect, dbUpsert, hasSupabase } from "./db";
 import { withFees, type Fees } from "./wilayas";
 
+// معلومات التواصل الرسمية (القيم الافتراضية — تتبدل من اللوحة: الإعدادات)
+export const OFFICIAL = {
+  phone: "0563758499",
+  phone2: "0561389326",
+  socials: {
+    instagram: "https://www.instagram.com/dhi_electronics?bqrl=MTUwMXRqcG9scmZnaQ==",
+    facebook: "https://www.facebook.com/share/1Jmbd9pDCi/",
+    tiktok: "https://www.tiktok.com/@dhielectronics",
+  },
+};
+
 // محتوى المتجر: كامل يتبدل من اللوحة (ما نكتبو حتى وعد ما كانش)
 export type StoreContent = {
   successOrders: number | null; // عدد الطلبيات الناجحة (رقمك الحقيقي)
@@ -15,7 +26,7 @@ export type StoreContent = {
 export const defaultContent: StoreContent = {
   successOrders: null,
   announcement: ["💵 الدفع عند الاستلام", "🚚 توصيل إلى 58 ولاية", "📦 يوصلك حتى باب دارك", "🛡️ طلبك بكل أمان"],
-  socials: { facebook: "", instagram: "", tiktok: "" },
+  socials: OFFICIAL.socials,
   warranty: "",
   delivery: [
     "نوصلو لكامل الولايات الـ 58، للدار ولا لمكتب شركة التوصيل.",
@@ -34,8 +45,10 @@ export const defaultContent: StoreContent = {
 };
 
 export type Settings = {
-  whatsapp: string; // صيغة دولية بلا + (213...)
-  phone: string;
+  whatsapp: string; // رقم الواتساب الأول
+  whatsapp2: string; // رقم الواتساب الثاني
+  phone: string; // الهاتف الأول
+  phone2: string; // الهاتف الثاني
   fees: Fees;
   pixels: { facebook: string; tiktok: string; snapchat: string };
   blocked: { phones: string[]; ips: string[] };
@@ -44,8 +57,10 @@ export type Settings = {
 };
 
 const defaults = (): Settings => ({
-  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP || "",
-  phone: process.env.NEXT_PUBLIC_PHONE || "",
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP || OFFICIAL.phone,
+  whatsapp2: OFFICIAL.phone2,
+  phone: process.env.NEXT_PUBLIC_PHONE || OFFICIAL.phone,
+  phone2: OFFICIAL.phone2,
   fees: {},
   pixels: {
     facebook: process.env.NEXT_PUBLIC_FB_PIXEL_ID || "",
@@ -63,14 +78,22 @@ export async function getSettings(fresh = false): Promise<Settings> {
     const base = defaults();
     return {
       ...base, ...d,
-      whatsapp: d.whatsapp || base.whatsapp, phone: d.phone || base.phone, fees: d.fees || {},
+      whatsapp: d.whatsapp || base.whatsapp, whatsapp2: d.whatsapp2 || base.whatsapp2,
+      phone: d.phone || base.phone, phone2: d.phone2 || base.phone2, fees: d.fees || {},
       pixels: {
         facebook: d.pixels?.facebook || base.pixels.facebook,
         tiktok: d.pixels?.tiktok || base.pixels.tiktok,
         snapchat: d.pixels?.snapchat || base.pixels.snapchat,
       },
       blocked: { phones: d.blocked?.phones || [], ips: d.blocked?.ips || [] },
-      content: { ...defaultContent, ...(d.content || {}), socials: { ...defaultContent.socials, ...(d.content?.socials || {}) } },
+      content: {
+        ...defaultContent, ...(d.content || {}),
+        socials: {
+          facebook: d.content?.socials?.facebook || OFFICIAL.socials.facebook,
+          instagram: d.content?.socials?.instagram || OFFICIAL.socials.instagram,
+          tiktok: d.content?.socials?.tiktok || OFFICIAL.socials.tiktok,
+        },
+      },
     };
   } catch (e) {
     if (hasSupabase) console.error("settings:", e);
@@ -91,4 +114,16 @@ export function waLink(number: string, text?: string) {
   const n = number.replace(/\D/g, "").replace(/^0/, "213");
   if (!n) return null;
   return `https://wa.me/${n}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+}
+
+// كل أرقام التواصل فبلاصة وحدة (للمتجر)
+export function contacts(s: Settings) {
+  const tel = (n: string) => `tel:${n.replace(/[^\d+]/g, "")}`;
+  const phones = [s.phone, s.phone2].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  const was = [s.whatsapp, s.whatsapp2].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  return {
+    phones: phones.map((n) => ({ n, href: tel(n) })),
+    whatsapps: was.map((n) => ({ n, href: waLink(n)! })),
+    socials: s.content.socials,
+  };
 }

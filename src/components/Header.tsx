@@ -1,10 +1,13 @@
 import Link from "next/link";
 import Logo from "./Logo";
 import { categories } from "@/lib/categories";
-import { getSettings } from "@/lib/settings";
+import { contacts, getSettings } from "@/lib/settings";
+import { IconPhone } from "./SocialIcons";
 
 export default async function Header() {
-  const perks = (await getSettings()).content.announcement;
+  const s = await getSettings();
+  const perks = s.content.announcement;
+  const phone = contacts(s).phones[0];
   return (
     <header className="sticky top-0 z-40">
       <div className="overflow-hidden bg-navy py-2 text-[13px] font-semibold text-white">
@@ -26,6 +29,8 @@ export default async function Header() {
             <form action="/search" className="hidden lg:block">
               <input name="q" placeholder="🔍 قلّب على منتج..." className="w-48 rounded-full border border-line bg-soft px-4 py-2 text-sm outline-none focus:w-64 focus:border-brand" />
             </form>
+            {phone && <a href={phone.href} className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold text-navy hover:bg-soft xl:flex"><IconPhone className="size-4 text-brand" /><span dir="ltr">{phone.n}</span></a>}
+            {phone && <a href={phone.href} aria-label="اتصل بنا" className="grid size-10 place-items-center rounded-full bg-soft text-brand xl:hidden"><IconPhone className="size-4" /></a>}
             <Link href="/search" aria-label="بحث" className="grid size-10 place-items-center rounded-full bg-soft text-lg lg:hidden">🔍</Link>
             <Link href="/search" className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark">كل المنتجات</Link>
           </div>

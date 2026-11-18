@@ -7,7 +7,7 @@ import { clean, verifyOrder } from "@/lib/review-admin";
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PUT(req: Request, { params }: Ctx) {
-  const g = await guard(); if (g) return g;
+  const g = await guard("reviews.edit"); if (g) return g;
   const { id } = await params;
   try {
     const b = await req.json().catch(() => ({}));
@@ -24,7 +24,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(_req: Request, { params }: Ctx) {
-  const g = await guard(); if (g) return g;
+  const g = await guard("reviews.edit"); if (g) return g;
   const { id } = await params;
   try { await dbDelete("reviews", { id }); revalidateTag("reviews"); return NextResponse.json({ ok: true }); } catch (e) { return fail(e); }
 }

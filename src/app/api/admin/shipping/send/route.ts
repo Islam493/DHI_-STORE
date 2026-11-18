@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { dbSelect, dbUpdate } from "@/lib/db";
+import { audit } from "@/lib/audit";
+import { dbSelect } from "@/lib/db";
+import { updateOrder } from "@/lib/orders";
 import { createParcel } from "@/lib/ecotrack";
 import type { Order } from "@/lib/order-types";
-import { fail, guard } from "@/lib/admin-api";
+import { actor, fail, guard } from "@/lib/admin-api";
 
 // يبعث الطلبية لـ World Express ويحفظ رقم التتبع
 export async function POST(req: Request) {
-  const g = await guard(); if (g) return g;
+  const g = await guard("orders.ship"); if (g) return g;
   const b = await req.json().catch(() => ({}));
   try {
     const [o] = await dbSelect<Order>("orders", { eq: { id: String(b.id || "") }, limit: 1 }, { fresh: true });
@@ -32,7 +34,9 @@ export async function POST(req: Request) {
       type: 1,
     });
     const shipped_at = new Date().toISOString();
-    await dbUpdate("orders", { id: o.id }, { tracking, shipped_at, status: "shipped" });
+    const by = await actor();
+    await updateOrder(o, { tracking, shipped_at, status: "shipped" }, by);
+    await audit(by, "order.ship", o.id, { tracking });
     return NextResponse.json({ ok: true, tracking, shipped_at });
   } catch (e) { return fail(e); }
 }

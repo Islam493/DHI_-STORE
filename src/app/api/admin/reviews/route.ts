@@ -8,13 +8,13 @@ import { clean, verifyOrder } from "@/lib/review-admin";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const g = await guard(); if (g) return g;
+  const g = await guard("reviews.edit"); if (g) return g;
   try { return NextResponse.json({ reviews: await dbSelect<Review>("reviews", { order: ["created_at", "desc"], limit: 1000 }, { fresh: true }) }); }
   catch (e) { return fail(e); }
 }
 
 export async function POST(req: Request) {
-  const g = await guard(); if (g) return g;
+  const g = await guard("reviews.edit"); if (g) return g;
   try {
     const c = clean(await req.json().catch(() => ({})));
     if ("error" in c) return NextResponse.json({ error: c.error }, { status: 400 });

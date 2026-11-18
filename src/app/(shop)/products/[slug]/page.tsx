@@ -10,9 +10,10 @@ import ViewTracker from "@/components/ViewTracker";
 import Reviews, { Stars } from "@/components/Reviews";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import Faq from "@/components/Faq";
-import { discountPercent, getCategory, getProduct, getProducts, type Product } from "@/lib/catalog";
+import ContactBlock from "@/components/ContactBlock";
+import { discountPercent, getCategory, getProduct, getProducts, isLow, isOut, type Product } from "@/lib/catalog";
 import { formatPrice, store } from "@/lib/config";
-import { getSettings, getWilayas, waLink } from "@/lib/settings";
+import { getSettings, getWilayas } from "@/lib/settings";
 import { getReviews, summarize } from "@/lib/reviews";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -53,13 +54,12 @@ export default async function ProductPage({ params }: Props) {
   const storeReviews = allReviews.filter((r) => !r.product_id);
   const faqs = [...(L?.faqs || []), ...settings.content.faqs];
   const cmp = comparison(p, all);
-  const wa = waLink(settings.whatsapp, `السلام عليكم، عندي سؤال على: ${p.name}`);
 
   const jsonLd = [
     {
       "@context": "https://schema.org", "@type": "Product", name: p.name, image: p.images.map(abs),
       description: (L?.sub || p.description.join(" ")).slice(0, 500), brand: { "@type": "Brand", name: store.name },
-      offers: { "@type": "Offer", priceCurrency: "DZD", price: p.price, availability: "https://schema.org/InStock", url: `${store.url}/products/${p.slug}` },
+      offers: { "@type": "Offer", priceCurrency: "DZD", price: p.price, availability: isOut(p) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock", url: `${store.url}/products/${p.slug}` },
       ...(sum.count ? { aggregateRating: { "@type": "AggregateRating", ratingValue: sum.avg, reviewCount: sum.count } } : {}),
     },
     ...(faqs.length ? [{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) }] : []),
@@ -97,7 +97,17 @@ export default async function ProductPage({ params }: Props) {
                 {L.benefits.slice(0, 4).map((b) => <li key={b.title} className="flex items-center gap-2 rounded-xl bg-soft px-3 py-2 text-sm font-bold text-navy"><span>{b.icon}</span>{b.title}</li>)}
               </ul>
             ) : null}
-            <div className="my-6"><OrderForm product={p} wilayas={wilayas} /></div>
+            {isLow(p) && <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">⚠️ باقي {p.stock} برك فالمخزون</p>}
+            <div className="my-6">
+              {isOut(p) ? (
+                <div id="order" className="scroll-mt-28 rounded-3xl border-2 border-sale/30 bg-sale/5 p-5 text-center">
+                  <p className="text-3xl">⛔</p>
+                  <p className="mt-2 text-lg font-extrabold text-navy">نفذ المخزون حاليا</p>
+                  <p className="mt-1 text-sm text-muted">راسلنا ونقولولك وقتاش يرجع، ولا نعاونوك تختار منتج آخر.</p>
+                  <div className="mt-4"><ContactBlock socials={false} compact /></div>
+                </div>
+              ) : <OrderForm product={p} wilayas={wilayas} />}
+            </div>
             <Trust compact />
           </div>
         </div>
@@ -191,7 +201,7 @@ export default async function ProductPage({ params }: Props) {
           <div className="rounded-3xl bg-white p-5 ring-1 ring-line">
             <p className="text-2xl">💬</p><h3 className="mt-2 font-extrabold text-navy">عندك سؤال؟</h3>
             <p className="mt-2 text-sm leading-6 text-muted">فريق DHI Electronics يجاوبك قبل وبعد الطلب.</p>
-            {wa && <a href={wa} target="_blank" rel="noopener" className="mt-3 inline-block rounded-xl bg-wa px-4 py-2 text-sm font-bold text-white">راسلنا على الواتساب</a>}
+            <div className="mt-3"><ContactBlock socials={false} compact /></div>
           </div>
         </section>
 
@@ -264,7 +274,7 @@ export default async function ProductPage({ params }: Props) {
             <div className="text-center">
               <p className="text-3xl font-extrabold">{formatPrice(p.price)}</p>
               {off > 0 && <p className="text-sm text-white/60 line-through">{formatPrice(p.compareAtPrice!)}</p>}
-              <a href="#order" className="cta-pulse mt-3 inline-block rounded-2xl bg-brand px-8 py-4 text-lg font-extrabold">اطلب الآن</a>
+              <a href="#order" className="cta-pulse mt-3 inline-block rounded-2xl bg-brand px-8 py-4 text-lg font-extrabold">{isOut(p) ? "تواصل معنا" : "اطلب الآن"}</a>
             </div>
           </div>
         </section>
@@ -281,7 +291,7 @@ export default async function ProductPage({ params }: Props) {
       {/* 12. شريط الشراء فالتيليفون */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 p-3 backdrop-blur md:hidden">
         <a href="#order" className="flex items-center justify-between rounded-2xl bg-brand px-5 py-3 font-extrabold text-white">
-          <span className="leading-tight">اطلب الآن<span className="block text-[11px] font-semibold opacity-80">💵 الدفع عند الاستلام</span></span>
+          <span className="leading-tight">{isOut(p) ? "نفذ المخزون" : "اطلب الآن"}<span className="block text-[11px] font-semibold opacity-80">{isOut(p) ? "راسلنا على الواتساب" : "💵 الدفع عند الاستلام"}</span></span>
           <span className="text-left">{formatPrice(p.price)}{off > 0 && <span className="block text-[11px] font-semibold line-through opacity-70">{formatPrice(p.compareAtPrice!)}</span>}</span>
         </a>
       </div>

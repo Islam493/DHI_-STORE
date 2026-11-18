@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import Trust from "@/components/Trust";
 import Reviews from "@/components/Reviews";
 import Faq from "@/components/Faq";
+import { socialMeta } from "@/components/SocialIcons";
 import { bestSellerIds, categories, discountPercent, getProducts } from "@/lib/catalog";
 import { formatPrice } from "@/lib/config";
 import { getSettings, waLink } from "@/lib/settings";
@@ -15,7 +16,9 @@ export default async function Home() {
   const [products, settings, reviews, best] = await Promise.all([getProducts(), getSettings(), getReviews(), bestSellerIds()]);
   const c = settings.content;
   const rank = (id: string) => { const i = best?.indexOf(id) ?? -1; return i < 0 ? 999 : i; };
-  const featured = best ? [...products].sort((a, b) => rank(a.id) - rank(b.id)).slice(0, 8) : products.slice(0, 8);
+  const featured = best
+    ? [...products].sort((a, b) => rank(a.id) - rank(b.id)).slice(0, 8)
+    : [...products].sort((a, b) => Number(!!b.featured) - Number(!!a.featured)).slice(0, 8);
   const offers = products.filter((p) => discountPercent(p) > 0).sort((a, b) => discountPercent(b) - discountPercent(a)).slice(0, 4);
   const heroMain = products.find((p) => p.slug === "solar-4g-camera") ?? products[0];
   const heroSide = products.filter((p) => p.id !== heroMain?.id && p.category !== heroMain?.category).slice(0, 2);
@@ -147,6 +150,22 @@ export default async function Home() {
           <Faq items={c.faqs} />
         </section>
       )}
+
+      {/* السوشيال */}
+      <section className="mx-auto mt-14 max-w-6xl px-4">
+        <div className="text-center">
+          <h2 className="text-2xl font-extrabold text-navy md:text-3xl">تابع DHI Electronics على مواقع التواصل الاجتماعي</h2>
+          <p className="mt-2 text-muted">ابقى على اتصال معنا، واكتشف آخر منتجاتنا وعروضنا وجديدنا.</p>
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          {socialMeta.map(({ k, name, handle, Icon, color }) => c.socials[k] && (
+            <a key={k} href={c.socials[k]} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 rounded-3xl bg-white p-5 ring-1 ring-line transition hover:-translate-y-1 hover:shadow-lg">
+              <span className={`grid size-14 shrink-0 place-items-center rounded-2xl text-white ${color}`}><Icon className="size-7" /></span>
+              <span><span className="block text-lg font-extrabold text-navy">{name}</span><span className="text-sm font-bold text-brand group-hover:underline" dir="ltr">{handle}</span></span>
+            </a>
+          ))}
+        </div>
+      </section>
 
       {/* آخر دعوة */}
       <section className="mx-auto mt-14 max-w-6xl px-4">

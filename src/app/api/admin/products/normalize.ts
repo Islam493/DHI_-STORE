@@ -32,6 +32,10 @@ export function normalize(b: Record<string, unknown>, all: Product[], selfId?: s
       active: b.active !== false, price, compareAtPrice: cmp, variants, images, description,
       sort: typeof b.sort === "number" ? b.sort : undefined,
       ...(landing ? { landing } : {}),
+      sku: b.sku ? String(b.sku).trim().slice(0, 40) : null,
+      cost: b.cost === "" || b.cost == null ? null : (Number.isNaN(int(b.cost)) ? null : int(b.cost)),
+      lowStock: b.lowStock === "" || b.lowStock == null ? null : (Number.isNaN(int(b.lowStock)) ? null : int(b.lowStock)),
+      featured: b.featured === true,
     },
   };
 }

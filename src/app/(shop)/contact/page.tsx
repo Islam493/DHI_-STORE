@@ -1,20 +1,16 @@
 import type { Metadata } from "next";
-import { getSettings, waLink } from "@/lib/settings";
+import ContactBlock from "@/components/ContactBlock";
 
-export const metadata: Metadata = { title: "اتصل بنا" };
+export const metadata: Metadata = { title: "اتصل بنا", description: "تواصل مع DHI Electronics بالهاتف، الواتساب ولا مواقع التواصل.", alternates: { canonical: "/contact" } };
 
-export default async function Contact() {
-  const store = await getSettings();
-  const wa = waLink(store.whatsapp, "السلام عليكم");
+export default function Contact() {
   return (
-    <div className="mx-auto max-w-xl px-4 py-12 text-center">
-      <h1 className="text-3xl font-extrabold text-navy">اتصل بنا</h1>
-      <p className="mt-3 text-muted">عندك سؤال على منتج ولا على طلبيتك؟ راسلنا ونجاوبوك فأقرب وقت.</p>
-      <div className="mt-8 grid gap-3">
-        {wa && <a href={wa} className="rounded-2xl bg-wa p-4 text-lg font-extrabold text-white">💬 راسلنا على الواتساب</a>}
-        {store.phone && <a href={`tel:${store.phone.replace(/\s/g, "")}`} className="rounded-2xl bg-navy p-4 text-lg font-extrabold text-white">📞 <span dir="ltr">{store.phone}</span></a>}
-        {!wa && !store.phone && <p className="rounded-2xl bg-soft p-4 text-muted">(زيد رقم الواتساب والهاتف فالإعدادات)</p>}
+    <div className="mx-auto max-w-2xl px-4 py-12">
+      <div className="text-center">
+        <h1 className="text-3xl font-extrabold text-navy">اتصل بنا</h1>
+        <p className="mt-3 text-muted">عندك سؤال على منتج ولا على طلبيتك؟ عيطلنا ولا راسلنا، فريق DHI Electronics يجاوبك.</p>
       </div>
+      <div className="mt-8 rounded-3xl bg-soft p-5 md:p-6"><ContactBlock /></div>
     </div>
   );
 }

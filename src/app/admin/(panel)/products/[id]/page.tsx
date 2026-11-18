@@ -3,6 +3,7 @@ import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/components/admin/api";
+import { confirmAction } from "@/components/admin/ui";
 import { categories } from "@/lib/categories";
 import type { Landing, Product, Variant } from "@/lib/catalog";
 
@@ -10,6 +11,7 @@ type Form = {
   name: string; slug: string; tagline: string; category: string; active: boolean;
   price: string; compareAtPrice: string; description: string; images: string[]; variants: { name: string; price: string }[];
   // صفحة الهبوط (نص: كل سطر عنصر)
+  sku: string; cost: string; lowStock: string; featured: boolean; stock: number | null;
   l_headline: string; l_sub: string; l_ptitle: string; l_points: string; l_benefits: string; l_uses: string; l_notes: string; l_faqs: string; l_specs: string;
 };
 
@@ -34,7 +36,7 @@ function formToLanding(f: Form): Landing {
   };
 }
 
-const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [], ...landingToForm() };
+const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [], sku: "", cost: "", lowStock: "", featured: false, stock: null, ...landingToForm() };
 
 // نصغرو الصورة فالتيليفون قبل ما نرفعوها (أسرع + أقل من الحد)
 async function shrink(file: File): Promise<Blob> {
@@ -68,6 +70,8 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         price: String(p.price), compareAtPrice: p.compareAtPrice ? String(p.compareAtPrice) : "",
         description: p.description.join("\n"), images: p.images,
         variants: p.variants.map((v: Variant) => ({ name: v.name, price: String(v.price) })),
+        sku: p.sku || "", cost: p.cost != null ? String(p.cost) : "", lowStock: p.lowStock != null ? String(p.lowStock) : "",
+        featured: !!p.featured, stock: p.stock ?? null,
         ...landingToForm(p.landing),
       });
     }).catch((e) => setErr(e.message));
@@ -104,7 +108,9 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     if (!f) return;
     const { l_headline, l_sub, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs, ...rest } = f;
     void [l_headline, l_sub, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs];
-    const body = { ...rest, price: Number(f.price), variants: f.variants.filter((v) => v.name.trim()), landing: formToLanding(f) };
+    const { stock: _s, ...rest2 } = rest;
+    void _s;
+    const body = { ...rest2, price: Number(f.price), variants: f.variants.filter((v) => v.name.trim()), landing: formToLanding(f) };
     try {
       if (isNew) await api("/api/admin/products", { method: "POST", body: JSON.stringify(body) });
       else await api(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify(body) });
@@ -113,7 +119,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   }
 
   async function remove() {
-    if (!confirm("متأكد تحب تحذف هاد المنتج نهائياً؟ (تقدر غير تخبيه)")) return;
+    if (!(await confirmAction("تحذف هاد المنتج نهائياً؟ الطلبيات القديمة تبقى، بصح المنتج يتنحى من المتجر. (تقدر غير تخبيه)"))) return;
     try { await api(`/api/admin/products/${id}`, { method: "DELETE" }); router.push("/admin/products"); }
     catch (e) { setErr((e as Error).message); }
   }
@@ -139,10 +145,29 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
             {categories.map((c) => <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>)}
           </select>
         </div>
-        <label className="flex items-center gap-3 rounded-xl bg-soft p-3 font-bold">
-          <input type="checkbox" className="size-5" checked={f.active} onChange={(e) => set("active", e.target.checked)} />
-          يبان فالمتجر
-        </label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex items-center gap-3 rounded-xl bg-soft p-3 font-bold">
+            <input type="checkbox" className="size-5" checked={f.active} onChange={(e) => set("active", e.target.checked)} />
+            👁️ يبان فالمتجر
+          </label>
+          <label className="flex items-center gap-3 rounded-xl bg-soft p-3 font-bold">
+            <input type="checkbox" className="size-5" checked={f.featured} onChange={(e) => set("featured", e.target.checked)} />
+            ⭐ منتج مميز (فالرئيسية)
+          </label>
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-line">
+        <div className="flex items-center justify-between">
+          <h2 className="font-extrabold text-navy">🏬 المخزون والتكلفة</h2>
+          {!isNew && <Link href="/admin/inventory" className="text-sm font-bold text-brand">إدارة المخزون ←</Link>}
+        </div>
+        <p className="rounded-xl bg-soft p-3 text-sm">المخزون الحالي: <b>{f.stock === null ? "غير متبوع (بلا حد)" : `${f.stock} قطعة`}</b> <span className="text-xs text-muted">— يتبدل من صفحة المخزون باش يتسجل كل تبديل</span></p>
+        <div className="grid grid-cols-3 gap-3">
+          <div><label className={label}>رمز SKU</label><input className={input} dir="ltr" value={f.sku} onChange={(e) => set("sku", e.target.value)} placeholder="DHI-CAM-01" /></div>
+          <div><label className={label}>سعر الشراء <span className="font-normal text-muted">(للربح)</span></label><input className={input} inputMode="numeric" value={f.cost} onChange={(e) => set("cost", e.target.value.replace(/\D/g, ""))} placeholder="اختياري" /></div>
+          <div><label className={label}>تنبيه كي يبقى</label><input className={input} inputMode="numeric" value={f.lowStock} onChange={(e) => set("lowStock", e.target.value.replace(/\D/g, ""))} placeholder="3" /></div>
+        </div>
       </section>
 
       <section className="rounded-2xl bg-white p-4 ring-1 ring-line">
@@ -214,7 +239,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
 
       {!isNew && <button type="button" onClick={remove} className="w-full rounded-xl py-3 font-bold text-sale ring-1 ring-sale/30">🗑️ حذف المنتج</button>}
 
-      <div className="sticky bottom-0 z-20 -mx-4 border-t border-line bg-white/95 p-3 backdrop-blur md:-mx-6">
+      <div className="sticky bottom-0 z-20 -mx-3 border-t border-line bg-white/95 p-3 backdrop-blur md:-mx-6">
         <div>
           {err && <p className="mb-2 rounded-xl bg-sale/10 p-2 text-sm font-semibold text-sale">{err}</p>}
           <button onClick={save} disabled={saving || uploading > 0} className="w-full rounded-xl bg-brand py-3.5 text-lg font-extrabold text-white disabled:opacity-50">

@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_COOKIE, isAdmin } from "@/lib/auth";
+import { ADMIN_COOKIE, readSession } from "@/lib/auth";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname === "/admin/login" || pathname === "/api/admin/login") return NextResponse.next();
-  if (await isAdmin(req.cookies.get(ADMIN_COOKIE)?.value)) return NextResponse.next();
+  if (await readSession(req.cookies.get(ADMIN_COOKIE)?.value)) return NextResponse.next();
   if (pathname.startsWith("/api/")) return NextResponse.json({ error: "لازم تدخل" }, { status: 401 });
   const url = req.nextUrl.clone();
   url.pathname = "/admin/login";

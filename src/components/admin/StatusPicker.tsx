@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { statuses, type Status } from "@/lib/order-types";
+import { needsConfirm, statuses, type Status } from "@/lib/order-types";
+import { confirmAction } from "./ui";
 
 // زر الحالة: كي تضغط عليه تخرج لستة كل الحالات
 export default function StatusPicker({ value, onPick, disabled }: { value: string; onPick: (s: Status) => void; disabled?: boolean }) {
@@ -22,7 +23,12 @@ export default function StatusPicker({ value, onPick, disabled }: { value: strin
       {open && (
         <div className="absolute left-0 top-full z-40 mt-1 w-60 overflow-hidden rounded-2xl bg-white py-1 shadow-xl ring-1 ring-line">
           {(Object.keys(statuses) as Status[]).map((s) => (
-            <button key={s} type="button" onClick={() => { setOpen(false); if (s !== value) onPick(s); }}
+            <button key={s} type="button" onClick={async () => {
+                setOpen(false);
+                if (s === value) return;
+                if (needsConfirm.includes(s) && !(await confirmAction(`متأكد تبدّل الحالة لـ «${statuses[s].label}»؟`, s !== "delivered"))) return;
+                onPick(s);
+              }}
               className={`flex w-full items-center gap-2 px-4 py-2 text-right text-sm hover:bg-soft ${s === value ? "bg-soft font-extrabold text-navy" : "text-ink"}`}>
               <span className="w-5 text-center">{statuses[s].icon}</span>{statuses[s].label}{s === value && <span className="mr-auto text-brand">✓</span>}
             </button>

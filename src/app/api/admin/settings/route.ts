@@ -1,26 +1,29 @@
 import { NextResponse } from "next/server";
+import { audit } from "@/lib/audit";
 import { getSettings, getWilayas, saveSettings, type Settings } from "@/lib/settings";
 import { defaultWilayas, type Fees } from "@/lib/wilayas";
 import { carrier } from "@/lib/ecotrack";
-import { fail, guard, refreshSite } from "@/lib/admin-api";
+import { actor, fail, guard, refreshSite } from "@/lib/admin-api";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const g = await guard(); if (g) return g;
+  const g = await guard("orders.view"); if (g) return g;
   try {
     const s = await getSettings(true);
-    return NextResponse.json({ whatsapp: s.whatsapp, phone: s.phone, pixels: s.pixels, blocked: s.blocked, content: s.content, wilayas: await getWilayas(true), carrier: carrier.enabled });
+    return NextResponse.json({ whatsapp: s.whatsapp, whatsapp2: s.whatsapp2, phone: s.phone, phone2: s.phone2, pixels: s.pixels, blocked: s.blocked, content: s.content, wilayas: await getWilayas(true), carrier: carrier.enabled });
   } catch (e) { return fail(e); }
 }
 
 // يحفظ غير الحوايج اللي تبعثو (التواصل، البيكسلات، ولا الأسعار)
 export async function PUT(req: Request) {
-  const g = await guard(); if (g) return g;
+  const g = await guard("settings.edit"); if (g) return g;
   try {
     const b = await req.json();
     const patch: Partial<Settings> = {};
     if (b.whatsapp !== undefined) patch.whatsapp = String(b.whatsapp || "").replace(/[^\d+]/g, "").slice(0, 20);
+    if (b.whatsapp2 !== undefined) patch.whatsapp2 = String(b.whatsapp2 || "").replace(/[^\d+]/g, "").slice(0, 20);
+    if (b.phone2 !== undefined) patch.phone2 = String(b.phone2 || "").replace(/[^\d +]/g, "").trim().slice(0, 20);
     if (b.phone !== undefined) patch.phone = String(b.phone || "").replace(/[^\d +]/g, "").trim().slice(0, 20);
     if (b.pixels !== undefined) {
       const c = (v: unknown) => String(v || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
@@ -57,6 +60,7 @@ export async function PUT(req: Request) {
     }
     await saveSettings(patch);
     refreshSite("settings");
+    await audit(await actor(), "settings.edit", Object.keys(patch).join(","));
     return NextResponse.json({ ok: true });
   } catch (e) { return fail(e); }
 }

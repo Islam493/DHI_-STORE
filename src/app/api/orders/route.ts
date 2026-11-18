@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getProduct } from "@/lib/catalog";
 import { getSettings, getWilayas } from "@/lib/settings";
 import { saveOrder, notifyTelegram, type Order } from "@/lib/orders";
+import { adjustStock, availableStock } from "@/lib/stock";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
 const hits = new Map<string, number[]>();
@@ -91,9 +92,19 @@ export async function POST(req: Request) {
     ip,
   };
 
+  // المخزون: إذا كان متبوع، لازم يكفي، ونحجزوه للطلبية
+  const avail = await availableStock(product.id);
+  if (avail !== null && avail < quantity) {
+    return NextResponse.json({ error: avail === 0 ? "نفذ المخزون تاع هاد المنتج 😔 راسلنا على الواتساب" : `باقي غير ${avail} فالمخزون` }, { status: 409 });
+  }
+  const res = await adjustStock(product.id, -quantity, "order", order.id, "زبون");
+  if (res.tracked && !res.ok) return NextResponse.json({ error: "نفذ المخزون تاع هاد المنتج 😔" }, { status: 409 });
+  order.stock_applied = res.tracked;
+
   try {
     await saveOrder(order);
   } catch (e) {
+    if (res.tracked) await adjustStock(product.id, quantity, "order-failed", order.id, "النظام");
     console.error(e);
     return NextResponse.json({ error: "صرا مشكل، عاود جرّب ولا اتصل بينا على الواتساب" }, { status: 500 });
   }

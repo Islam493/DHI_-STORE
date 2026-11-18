@@ -21,7 +21,9 @@ export type Order = {
   ip: string | null;
   tracking?: string | null; // رقم التتبع عند شركة التوصيل
   shipped_at?: string | null;
-  history?: { s: string; at: string }[] | null; // تاريخ الحالات
+  history?: { s: string; at: string; by?: string }[] | null; // تاريخ الحالات
+  internal_note?: string | null; // ملاحظة داخلية (للفريق برك)
+  stock_applied?: boolean | null;
   updated_at?: string | null;
 };
 
@@ -33,6 +35,8 @@ export const statuses = {
   postponed: { label: "مؤجلة", icon: "📅", color: "bg-amber-100 text-amber-700" },
   waiting_client: { label: "في انتظار اتصال العميل", icon: "⏳", color: "bg-amber-100 text-amber-700" },
   confirmed: { label: "مؤكدة", icon: "✅", color: "bg-teal-100 text-teal-700" },
+  preparing: { label: "قيد التحضير", icon: "📦", color: "bg-indigo-100 text-indigo-700" },
+  ready: { label: "جاهزة للإرسال", icon: "🏷️", color: "bg-blue-100 text-blue-700" },
   shipped: { label: "عند شركة التوصيل", icon: "🚚", color: "bg-violet-100 text-violet-700" },
   delivered: { label: "مكتملة", icon: "🎉", color: "bg-green-100 text-green-700" },
   returned: { label: "مرجع", icon: "↩️", color: "bg-red-100 text-red-700" },
@@ -45,8 +49,11 @@ export type Status = keyof typeof statuses;
 
 export const groups = {
   pending: ["new", "no_answer", "busy", "postponed", "waiting_client"] as Status[],
-  confirmed: ["confirmed", "shipped", "delivered", "returned"] as Status[],
+  confirmed: ["confirmed", "preparing", "ready", "shipped", "delivered", "returned"] as Status[],
   cancelled: ["cancelled", "cancelled_client", "fake", "duplicate"] as Status[],
 };
 
 export const isStatus = (s: unknown): s is Status => typeof s === "string" && s in statuses;
+
+// الحالات اللي تطلب تأكيد قبل التبديل
+export const needsConfirm: Status[] = ["cancelled", "cancelled_client", "fake", "duplicate", "returned", "delivered"];
