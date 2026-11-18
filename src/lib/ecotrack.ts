@@ -52,3 +52,27 @@ export async function label(tracking: string): Promise<Response> {
 export async function ping(): Promise<number> {
   return (await call("get/wilayas")).status;
 }
+
+// أسعار World Express لكل ولاية (الشكل ماشي موثق، علاه نقراو بمرونة)
+export type CarrierFee = { home: number | null; desk: number | null };
+const firstNum = (o: Record<string, unknown>, keys: string[]) => {
+  for (const k of keys) { const v = Number(o[k]); if (o[k] !== undefined && o[k] !== null && o[k] !== "" && Number.isFinite(v)) return v; }
+  return null;
+};
+export async function carrierFees(): Promise<{ fees: Record<number, CarrierFee>; keys: string[] }> {
+  const res = await call("get/fees");
+  if (!res.ok) throw new Error(`World Express: ${res.status}`);
+  const data = await res.json();
+  const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.livraison) ? data.livraison : Array.isArray(data?.data) ? data.data : Object.values(data?.livraison ?? data ?? {});
+  const fees: Record<number, CarrierFee> = {};
+  for (const it of list) {
+    if (!it || typeof it !== "object") continue;
+    const w = firstNum(it, ["wilaya_id", "code_wilaya", "wilaya", "id"]);
+    if (!w || w < 1 || w > 58) continue;
+    fees[w] = {
+      home: firstNum(it, ["tarif", "tarif_domicile", "home", "domicile", "prix", "price", "livraison"]),
+      desk: firstNum(it, ["tarif_stopdesk", "tarif_stop_desk", "stopdesk", "stop_desk", "desk", "tarif_bureau"]),
+    };
+  }
+  return { fees, keys: list[0] && typeof list[0] === "object" ? Object.keys(list[0]) : [] };
+}

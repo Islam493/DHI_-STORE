@@ -57,6 +57,14 @@ function Orders() {
     } catch (e) { setD({ ...d, orders: prev }); toast((e as Error).message, false); }
   }
 
+  async function removeSel() {
+    if (!(await confirmAction(`تحذف ${sel.length} طلبيات نهائياً؟ ما تقدرش ترجعهم. (المخزون يرجع وحدو)`))) return;
+    try {
+      const r = await api<{ deleted: number }>("/api/admin/orders", { method: "DELETE", body: JSON.stringify({ ids: sel }) });
+      toast(`تحذفو ${r.deleted} طلبيات`); load();
+    } catch (e) { toast((e as Error).message, false); }
+  }
+
   const status = get("status");
   const counts = d?.counts || {};
   const sumOf = (list: Status[]) => list.reduce((a, s) => a + (counts[s] || 0), 0);
@@ -134,6 +142,7 @@ function Orders() {
           <StatusPicker value="" onPick={async (s) => { if (await confirmAction(`تبدّل ${sel.length} طلبيات لـ «${statuses[s].label}»؟`, false)) setStatus(sel, s); }} />
           <a href={`/admin/print?ids=${sel.join(",")}`} target="_blank" className="rounded-lg bg-white/10 px-3 py-1.5 font-bold">🖨️ طباعة</a>
           {can("orders.export") && <a href={exportUrl({ ids: sel.join(",") })} className="rounded-lg bg-white/10 px-3 py-1.5 font-bold">⬇️ تصدير</a>}
+          {can("orders.delete") && <button onClick={removeSel} className="rounded-lg bg-sale px-3 py-1.5 font-bold">🗑️ حذف نهائي</button>}
           <button onClick={() => setSel([])} className="mr-auto rounded-lg bg-white/10 px-3 py-1.5 font-bold">إلغاء</button>
         </div>
       )}

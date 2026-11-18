@@ -16,8 +16,8 @@ export default async function Header() {
         </div>
       </div>
       <div className="border-b border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-          <Link href="/" aria-label="الرئيسية"><Logo /></Link>
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4">
+          <Link href="/" aria-label="الرئيسية" className="shrink-0"><Logo compact size={36} /></Link>
           <nav className="hidden items-center gap-6 text-sm font-semibold text-muted md:flex">
             <Link href="/" className="hover:text-brand">الرئيسية</Link>
             {categories.slice(0, 4).map((c) => (
@@ -32,10 +32,10 @@ export default async function Header() {
             {phone && <a href={phone.href} className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold text-navy hover:bg-soft xl:flex"><IconPhone className="size-4 text-brand" /><span dir="ltr">{phone.n}</span></a>}
             {phone && <a href={phone.href} aria-label="اتصل بنا" className="grid size-10 place-items-center rounded-full bg-soft text-brand xl:hidden"><IconPhone className="size-4" /></a>}
             <Link href="/search" aria-label="بحث" className="grid size-10 place-items-center rounded-full bg-soft text-lg lg:hidden">🔍</Link>
-            <Link href="/search" className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark">كل المنتجات</Link>
+            <Link href="/search" className="whitespace-nowrap rounded-full bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark sm:px-4"><span className="sm:hidden">المنتجات</span><span className="hidden sm:inline">كل المنتجات</span></Link>
           </div>
         </div>
-        <nav className="flex gap-2 overflow-x-auto px-4 pb-3 text-sm md:hidden">
+        <nav className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3 text-sm md:hidden">
           {categories.map((c) => (
             <Link key={c.slug} href={`/category/${c.slug}`} className="shrink-0 rounded-full border border-line bg-soft px-3 py-1.5 font-semibold text-navy">
               {c.icon} {c.short}

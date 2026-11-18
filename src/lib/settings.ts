@@ -53,6 +53,8 @@ export type Settings = {
   pixels: { facebook: string; tiktok: string; snapchat: string };
   blocked: { phones: string[]; ips: string[] };
   content: StoreContent;
+  // حساب الربح: سعر التوصيل اللي تخلصو لـ World Express + مصاريف المرجوع + عمولة
+  profit: { carrierFees: Record<string, { home: number | null; desk: number | null }>; returnFee: number; codPercent: number };
   seeded?: boolean;
 };
 
@@ -69,6 +71,7 @@ const defaults = (): Settings => ({
   },
   blocked: { phones: [], ips: [] },
   content: defaultContent,
+  profit: { carrierFees: {}, returnFee: 0, codPercent: 0 },
 });
 
 export async function getSettings(fresh = false): Promise<Settings> {
@@ -86,6 +89,7 @@ export async function getSettings(fresh = false): Promise<Settings> {
         snapchat: d.pixels?.snapchat || base.pixels.snapchat,
       },
       blocked: { phones: d.blocked?.phones || [], ips: d.blocked?.ips || [] },
+      profit: { carrierFees: d.profit?.carrierFees || {}, returnFee: Number(d.profit?.returnFee) || 0, codPercent: Number(d.profit?.codPercent) || 0 },
       content: {
         ...defaultContent, ...(d.content || {}),
         socials: {

@@ -11,6 +11,8 @@ import Reviews, { Stars } from "@/components/Reviews";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import Faq from "@/components/Faq";
 import ContactBlock from "@/components/ContactBlock";
+import MotionShowcase from "@/components/MotionShowcase";
+import Reveal from "@/components/Reveal";
 import { discountPercent, getCategory, getProduct, getProducts, isLow, isOut, type Product } from "@/lib/catalog";
 import { formatPrice, store } from "@/lib/config";
 import { getSettings, getWilayas } from "@/lib/settings";
@@ -115,50 +117,36 @@ export default async function ProductPage({ params }: Props) {
 
       {/* 2. المشكل */}
       {L?.problem.points.length ? (
-        <section className="mt-10 bg-navy py-14 text-white">
+        <section className="mt-10 bg-soft py-14">
           <div className="mx-auto max-w-4xl px-4 text-center">
-            <h2 className="text-2xl font-extrabold md:text-3xl">{L.problem.title}</h2>
+            <Reveal><h2 className="text-2xl font-extrabold text-navy md:text-3xl">{L.problem.title}</h2></Reveal>
             <ul className="mx-auto mt-8 grid max-w-3xl gap-3 text-right md:grid-cols-3">
-              {L.problem.points.map((pt) => <li key={pt} className="rounded-2xl bg-white/10 p-4 leading-7">😟 {pt}</li>)}
+              {L.problem.points.map((pt, k) => <Reveal key={pt} delay={k * 120}><li className="h-full rounded-2xl bg-white p-4 leading-7 text-navy shadow-sm ring-1 ring-line">😟 {pt}</li></Reveal>)}
             </ul>
           </div>
         </section>
       ) : null}
 
-      {/* 3. الحل */}
-      {L?.headline && (
-        <section className={`mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 ${p.images.length > 1 ? "md:grid-cols-2" : "max-w-3xl text-center"}`}>
-          <div>
-            <span className="text-sm font-extrabold text-brand">✨ الحل</span>
-            <h2 className="mt-2 text-2xl font-extrabold leading-snug text-navy md:text-4xl">{L.headline}</h2>
-            {L.sub && <p className="mt-4 text-lg leading-8 text-muted">{L.sub}</p>}
-            {L.uses.length > 0 && (
-              <div className="mt-6">
-                <p className="mb-2 text-sm font-bold text-navy">📍 وين تستعملها:</p>
-                <div className={`flex flex-wrap gap-2 ${p.images.length > 1 ? "" : "justify-center"}`}>{L.uses.map((u) => <span key={u} className="rounded-full bg-soft px-3 py-1.5 text-sm font-bold text-navy ring-1 ring-line">{u}</span>)}</div>
-              </div>
-            )}
-          </div>
-          {p.images.length > 1 && (
-            <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-soft shadow-xl ring-1 ring-line">
-              <Image src={p.images[1]} alt={p.name} fill sizes="(max-width:768px) 100vw, 50vw" className="object-cover" />
-            </div>
-          )}
-        </section>
-      )}
+      {/* 3. الحل — موشن جرافيك بصورة المنتج الحقيقية */}
+      {L?.benefits.length ? (
+        <MotionShowcase image={p.images[1] || p.images[0]} name={p.name} headline={L.headline || p.name} benefits={L.benefits} scan={p.category.startsWith("cameras") || p.category === "hidden"} />
+      ) : null}
 
       {/* 4. المميزات */}
       {L?.benefits.length ? (
-        <section className="bg-soft py-14">
+        <section className="py-14">
           <div className="mx-auto max-w-6xl px-4">
-            <h2 className="mb-8 text-center text-2xl font-extrabold text-navy md:text-3xl">علاش تختار {p.name.split("–")[0].trim()}؟</h2>
+            <h2 className="mb-3 text-center text-2xl font-extrabold text-navy md:text-3xl">علاش تختار {p.name.split("–")[0].trim()}؟</h2>
+            {L.uses.length > 0 && <p className="mb-8 text-center text-sm text-muted">📍 تنفعك ل: {L.uses.join(" · ")}</p>}
             <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
-              {L.benefits.map((b) => (
-                <div key={b.title} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-line transition hover:-translate-y-1 hover:shadow-lg md:p-6">
+              {L.benefits.map((b, k) => (
+                <Reveal key={b.title} delay={(k % 3) * 100}>
+                <div className="h-full rounded-3xl bg-white p-4 shadow-sm ring-1 ring-line transition hover:-translate-y-1 hover:shadow-lg md:p-6">
                   <span className="grid size-10 place-items-center rounded-2xl bg-brand/10 text-xl md:size-12 md:text-2xl">{b.icon}</span>
                   <h3 className="mt-3 font-extrabold text-navy md:mt-4 md:text-lg">{b.title}</h3>
                   <p className="mt-1 text-sm leading-6 text-muted md:text-base md:leading-7">{b.text}</p>
                 </div>
+                </Reveal>
               ))}
             </div>
           </div>

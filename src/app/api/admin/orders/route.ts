@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { audit } from "@/lib/audit";
-import { dbPage, dbSelect } from "@/lib/db";
+import { dbDelete, dbPage, dbSelect } from "@/lib/db";
 import { orderCounts } from "@/lib/stats";
 import { parseFilters, toQuery } from "@/lib/order-query";
 import { getAllProducts } from "@/lib/catalog";
@@ -48,5 +48,28 @@ export async function PATCH(req: Request) {
     }
     await audit(by, "order.status", list.join(","), { status, count: list.length });
     return NextResponse.json({ ok: true, errors });
+  } catch (e) { return fail(e); }
+}
+
+// حذف نهائي (المدير برك) — نرجعو المخزون قبل
+export async function DELETE(req: Request) {
+  const g = await guard("orders.delete"); if (g) return g;
+  const { ids } = await req.json().catch(() => ({}));
+  const list: string[] = Array.isArray(ids) ? ids.filter((x: unknown) => typeof x === "string").slice(0, 500) : [];
+  if (!list.length) return NextResponse.json({ error: "ما اخترت حتى طلبية" }, { status: 400 });
+  try {
+    const by = await actor();
+    let deleted = 0;
+    for (const id of list) {
+      const [o] = await dbSelect<Order>("orders", { eq: { id }, limit: 1 }, { fresh: true });
+      if (!o) continue;
+      if (o.stock_applied && !["cancelled", "cancelled_client", "fake", "duplicate", "returned"].includes(o.status)) {
+        await updateOrder(o, { status: "cancelled" }, by).catch(() => {});
+      }
+      await dbDelete("orders", { id });
+      deleted++;
+    }
+    await audit(by, "order.delete", list.join(","), { count: deleted });
+    return NextResponse.json({ ok: true, deleted });
   } catch (e) { return fail(e); }
 }
