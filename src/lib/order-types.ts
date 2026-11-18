@@ -19,6 +19,8 @@ export type Order = {
   total: number;
   note: string;
   ip: string | null;
+  tracking?: string | null; // رقم التتبع عند شركة التوصيل
+  shipped_at?: string | null;
 };
 
 export const statuses = {

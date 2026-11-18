@@ -12,6 +12,7 @@ function Orders() {
   const [q, setQ] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [carrier, setCarrier] = useState(false);
   const [loading, setLoading] = useState(true);
   const [more, setMore] = useState(false);
   const [err, setErr] = useState("");
@@ -20,7 +21,8 @@ function Orders() {
     setLoading(true); setErr("");
     try {
       const p = new URLSearchParams({ status, q: search, offset: String(offset) });
-      const d = await api<{ orders: Order[]; counts: Record<string, number> }>(`/api/admin/orders?${p}`);
+      const d = await api<{ orders: Order[]; counts: Record<string, number>; carrier: boolean }>(`/api/admin/orders?${p}`);
+      setCarrier(d.carrier);
       setOrders((prev) => (offset ? [...prev, ...d.orders] : d.orders));
       setCounts(d.counts); setMore(d.orders.length === 50);
     } catch (e) { setErr((e as Error).message); }
@@ -48,7 +50,7 @@ function Orders() {
       {err && <p className="rounded-2xl bg-sale/10 p-4 font-semibold text-sale">{err}</p>}
       {!loading && orders.length === 0 && !err && <p className="rounded-2xl bg-white p-8 text-center text-muted ring-1 ring-line">ما كانش طلبيات هنا</p>}
       <div className="grid gap-3 md:grid-cols-2">
-        {orders.map((o) => <OrderCard key={o.id} o={o} onChange={() => load(0)} />)}
+        {orders.map((o) => <OrderCard key={o.id} o={o} carrier={carrier} onChange={() => load(0)} />)}
       </div>
       {loading && <p className="p-4 text-center text-muted">جاري التحميل...</p>}
       {more && !loading && <button onClick={() => load(orders.length)} className="w-full rounded-xl bg-white py-3 font-bold text-brand ring-1 ring-line">عرض المزيد</button>}

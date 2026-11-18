@@ -1,10 +1,13 @@
 "use client";
 import { useState } from "react";
+import ShipPanel from "./ShipPanel";
 import { api, fmt, timeAgo } from "./api";
 import { statuses, type Order, type Status } from "@/lib/order-types";
 
-export default function OrderCard({ o, onChange }: { o: Order; onChange?: (s: Status) => void }) {
+export default function OrderCard({ o, onChange, carrier = false }: { o: Order; onChange?: (s: Status) => void; carrier?: boolean }) {
   const [status, setStatus] = useState(o.status as Status);
+  const [tracking, setTracking] = useState(o.tracking || "");
+  const [ship, setShip] = useState(false);
   const [busy, setBusy] = useState(false);
   const st = statuses[status] || statuses.new;
   const wa = `https://wa.me/${o.phone.replace(/^0/, "213")}?text=${encodeURIComponent(`السلام عليكم ${o.customer_name}، معاك DHI Electronics بخصوص طلبيتك (${o.product_name}) — المجموع ${fmt(o.total)}. نأكدو الطلبية؟`)}`;
@@ -37,6 +40,16 @@ export default function OrderCard({ o, onChange }: { o: Order; onChange?: (s: St
         <a href={`tel:${o.phone}`} className="rounded-xl bg-navy py-2.5 text-center text-sm font-bold text-white">📞 <span dir="ltr">{o.phone}</span></a>
         <a href={wa} target="_blank" rel="noopener" className="rounded-xl bg-wa py-2.5 text-center text-sm font-bold text-white">💬 واتساب</a>
       </div>
+      {tracking ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-violet-50 p-2.5 text-sm">
+          <span className="font-bold text-violet-800">🚚 World Express:</span>
+          <a href={`https://suivi.ecotrack.dz/suivi/${tracking}`} target="_blank" rel="noopener" className="font-extrabold text-violet-700 underline" dir="ltr">{tracking}</a>
+          <a href={`/api/admin/shipping/label?tracking=${tracking}`} target="_blank" className="mr-auto rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-bold text-white">🖨️ البوليصة</a>
+        </div>
+      ) : carrier && !["delivered", "returned", "cancelled"].includes(status) && (
+        ship ? <ShipPanel o={o} onDone={(t) => { setTracking(t); setStatus("shipped"); setShip(false); onChange?.("shipped"); }} onCancel={() => setShip(false)} />
+          : <button onClick={() => setShip(true)} className="mt-2 w-full rounded-xl bg-violet-700 py-2.5 text-sm font-bold text-white">🚚 ابعث لـ World Express</button>
+      )}
       <div className="mt-2 flex flex-wrap gap-1.5">
         {(Object.keys(statuses) as Status[]).map((s) => (
           <button key={s} disabled={busy || s === status} onClick={() => change(s)}

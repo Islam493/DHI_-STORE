@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { carrier, ping } from "@/lib/ecotrack";
 
 export const dynamic = "force-dynamic";
 
@@ -23,5 +24,6 @@ export async function GET() {
       out.supabaseError = String(e).slice(0, 300);
     }
   }
+  out.carrier = carrier.enabled ? await ping().then((s) => (s === 200 ? "ok" : `status ${s}`)).catch((e) => String(e.message).slice(0, 120)) : "no token";
   return NextResponse.json(out);
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbSelect, dbUpdate } from "@/lib/db";
 import { statuses, type Order } from "@/lib/orders";
 import { fail, guard } from "@/lib/admin-api";
+import { carrier } from "@/lib/ecotrack";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
     const all = await dbSelect<{ status: string }>("orders", { select: "status", limit: 5000 }, { fresh: true });
     const counts: Record<string, number> = { all: all.length };
     for (const o of all) counts[o.status] = (counts[o.status] || 0) + 1;
-    return NextResponse.json({ orders, counts });
+    return NextResponse.json({ orders, counts, carrier: carrier.enabled });
   } catch (e) { return fail(e); }
 }
 

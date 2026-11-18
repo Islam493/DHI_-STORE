@@ -7,7 +7,7 @@ import type { Order } from "@/lib/order-types";
 
 type Stats = {
   today: { count: number; revenue: number }; week: { count: number; revenue: number }; month: { count: number; revenue: number };
-  pending: number; deliveryRate: number | null; latest: Order[];
+  pending: number; deliveryRate: number | null; latest: Order[]; carrier: boolean;
 };
 
 export default function Dashboard() {
@@ -46,7 +46,7 @@ export default function Dashboard() {
           <Link href="/admin/orders" className="text-sm font-bold text-brand">شوف الكل ←</Link>
         </div>
         {s.latest.length === 0 ? <p className="rounded-2xl bg-white p-8 text-center text-muted ring-1 ring-line">مازال ما جات حتى طلبية</p> : (
-          <div className="grid gap-3 md:grid-cols-2">{s.latest.map((o) => <OrderCard key={o.id} o={o} />)}</div>
+          <div className="grid gap-3 md:grid-cols-2">{s.latest.map((o) => <OrderCard key={o.id} o={o} carrier={s.carrier} />)}</div>
         )}
       </section>
     </div>

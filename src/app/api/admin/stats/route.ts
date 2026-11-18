@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbSelect } from "@/lib/db";
 import { fail, guard } from "@/lib/admin-api";
 import type { Order } from "@/lib/orders";
+import { carrier } from "@/lib/ecotrack";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export async function GET() {
       pending: rows.filter((o) => o.status === "new").length,
       deliveryRate: closed ? Math.round((delivered / closed) * 100) : null,
       latest,
+      carrier: carrier.enabled,
     });
   } catch (e) { return fail(e); }
 }
