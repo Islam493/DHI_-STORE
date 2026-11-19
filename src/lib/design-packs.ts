@@ -1,7 +1,8 @@
 import packs from "@/data/design-packs.json";
 
 // تصاميم DHI لكل منتج: صور (تبان فالكروت) + فيديو موشن لكل صورة (يتلعب فصفحة المنتج)
-export type DesignPack = { images: string[]; videos?: string[]; photo: string; legacy?: string[] };
+// spin: صور 360° الحقيقية (dir/01.webp ... dir/NN.webp) من فيديو المنتج وهو يدور
+export type DesignPack = { images: string[]; videos?: string[]; photo: string; legacy?: string[]; spin?: { dir: string; count: number; reverse?: boolean } };
 export const designPacks = packs as Record<string, DesignPack>;
 
 const upgrade = new Map<string, string>();
@@ -14,6 +15,12 @@ for (const p of Object.values(designPacks)) {
 
 export const upgradeImages = (list: string[]) => list.map((u) => upgrade.get(u) || u);
 export const videoFor = (img: string) => video.get(img);
+
+export function spinFor(slug: string) {
+  const s = designPacks[slug]?.spin;
+  if (!s || s.count < 8) return undefined;
+  return { frames: Array.from({ length: s.count }, (_, k) => `${s.dir}/${String(k + 1).padStart(2, "0")}.webp`), reverse: s.reverse };
+}
 
 // صورة قسم الموشن: الكاميرا الحقيقية مقطوعة، كي التصاميم مستعملين
 export function motionPhoto(slug: string, images: string[]) {

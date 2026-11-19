@@ -13,7 +13,7 @@ import Faq from "@/components/Faq";
 import ContactBlock from "@/components/ContactBlock";
 import MotionShowcase from "@/components/MotionShowcase";
 import Reveal from "@/components/Reveal";
-import { motionPhoto, videoFor } from "@/lib/design-packs";
+import { motionPhoto, spinFor, videoFor } from "@/lib/design-packs";
 import { discountPercent, getCategory, getProduct, getProducts, isLow, isOut, type Product } from "@/lib/catalog";
 import { formatPrice, store } from "@/lib/config";
 import { getSettings, getWilayas } from "@/lib/settings";
@@ -82,7 +82,7 @@ export default async function ProductPage({ params }: Props) {
           {cat && <> / <Link href={`/category/${cat.slug}`} className="hover:text-brand">{cat.name}</Link></>}
         </nav>
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="md:sticky md:top-28 md:self-start"><Gallery images={p.images} videos={p.images.map((i) => videoFor(i) || "")} alt={p.name} badge={off} /></div>
+          <div className="md:sticky md:top-28 md:self-start"><Gallery images={p.images} videos={p.images.map((i) => videoFor(i) || "")} spin={spinFor(p.slug)} alt={p.name} badge={off} /></div>
           <div>
             {cat && <span className="inline-block rounded-full bg-brand/10 px-3 py-1 text-xs font-bold text-brand">{cat.icon} {cat.name}</span>}
             {L?.headline && <p className="mt-3 text-lg font-extrabold leading-snug text-brand md:text-xl">{L.headline}</p>}

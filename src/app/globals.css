@@ -72,3 +72,8 @@ body {
 .cta-shine { position: relative; overflow: hidden; }
 .cta-shine::after { content: ""; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation: shine 2.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .cta-nudge, .cta-shine::after { animation: none !important; } }
+
+/* عرض 360°: يد تبيّن للزبون يحرّك */
+@keyframes spin-hand { 0%, 100% { transform: translateX(-6px) rotate(-12deg); } 50% { transform: translateX(6px) rotate(12deg); } }
+.spin-hand { display: inline-block; animation: spin-hand 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .spin-hand { animation: none; } }
