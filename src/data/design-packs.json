@@ -1,8 +1,62 @@
 {
   "bulb-camera-360": {
-    "images": ["/designs/bulb-camera-360/m1.webp", "/designs/bulb-camera-360/m2.webp", "/designs/bulb-camera-360/m3.webp", "/designs/bulb-camera-360/m4.webp"],
-    "videos": ["/designs/bulb-camera-360/m1.mp4", "/designs/bulb-camera-360/m2.mp4", "/designs/bulb-camera-360/m3.mp4", "/designs/bulb-camera-360/m4.mp4"],
+    "images": [
+      "/designs/bulb-camera-360/m1.webp",
+      "/designs/bulb-camera-360/m2.webp",
+      "/designs/bulb-camera-360/m3.webp",
+      "/designs/bulb-camera-360/m4.webp"
+    ],
+    "videos": [
+      "/designs/bulb-camera-360/m1.mp4",
+      "/designs/bulb-camera-360/m2.mp4",
+      "/designs/bulb-camera-360/m3.mp4",
+      "/designs/bulb-camera-360/m4.mp4"
+    ],
     "photo": "/designs/bulb-camera-360/m-photo.webp",
-    "legacy": ["/designs/bulb-camera-360/1.webp", "/designs/bulb-camera-360/2.webp", "/designs/bulb-camera-360/3.webp", "/designs/bulb-camera-360/4.webp"]
+    "legacy": [
+      "/designs/bulb-camera-360/1.webp",
+      "/designs/bulb-camera-360/2.webp",
+      "/designs/bulb-camera-360/3.webp",
+      "/designs/bulb-camera-360/4.webp"
+    ],
+    "replace": [
+      "/products/bulb-camera-360-1.png"
+    ]
+  },
+  "okam-pro-4g-solar-dual": {
+    "images": [
+      "/designs/okam-pro-4g-solar-dual/m1.webp",
+      "/designs/okam-pro-4g-solar-dual/m2.webp",
+      "/designs/okam-pro-4g-solar-dual/m3.webp",
+      "/designs/okam-pro-4g-solar-dual/m4.webp"
+    ],
+    "videos": [
+      "/designs/okam-pro-4g-solar-dual/m1.mp4",
+      "/designs/okam-pro-4g-solar-dual/m2.mp4",
+      "/designs/okam-pro-4g-solar-dual/m3.mp4",
+      "/designs/okam-pro-4g-solar-dual/m4.mp4"
+    ],
+    "photo": "/designs/okam-pro-4g-solar-dual/m-photo.webp",
+    "replace": [
+      "/products/okam-pro-4g-solar-dual-1.png"
+    ]
+  },
+  "dummy-solar-camera": {
+    "images": [
+      "/designs/dummy-solar-camera/m1.webp",
+      "/designs/dummy-solar-camera/m2.webp",
+      "/designs/dummy-solar-camera/m3.webp",
+      "/designs/dummy-solar-camera/m4.webp"
+    ],
+    "videos": [
+      "/designs/dummy-solar-camera/m1.mp4",
+      "/designs/dummy-solar-camera/m2.mp4",
+      "/designs/dummy-solar-camera/m3.mp4",
+      "/designs/dummy-solar-camera/m4.mp4"
+    ],
+    "photo": "/designs/dummy-solar-camera/m-photo.webp",
+    "replace": [
+      "/products/dummy-solar-camera-1.png"
+    ]
   }
 }

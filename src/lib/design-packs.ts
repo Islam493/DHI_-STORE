@@ -2,7 +2,8 @@ import packs from "@/data/design-packs.json";
 
 // تصاميم DHI لكل منتج: صور (تبان فالكروت) + فيديو موشن لكل صورة (يتلعب فصفحة المنتج)
 // spin: صور 360° الحقيقية (dir/01.webp ... dir/NN.webp) من فيديو المنتج وهو يدور
-export type DesignPack = { images: string[]; videos?: string[]; photo: string; legacy?: string[]; spin?: { dir: string; count: number; reverse?: boolean } };
+// replace: الصور الأصلية تاع المنتج؛ إذا مازال بيهم برك، يولّي بالتصاميم الجداد وحدو
+export type DesignPack = { images: string[]; videos?: string[]; photo: string; legacy?: string[]; replace?: string[]; spin?: { dir: string; count: number; reverse?: boolean } };
 export const designPacks = packs as Record<string, DesignPack>;
 
 const upgrade = new Map<string, string>();
@@ -14,6 +15,14 @@ for (const p of Object.values(designPacks)) {
 }
 
 export const upgradeImages = (list: string[]) => list.map((u) => upgrade.get(u) || u);
+
+// صور المنتج النهائية: التصاميم الجداد كي يكون مازال بالصور الأصلية، وإلا صور صاحب المتجر كيما هي
+export function packImages(slug: string, list: string[]) {
+  const up = upgradeImages(list);
+  const p = designPacks[slug];
+  if (p?.replace && up.every((u) => p.replace!.includes(u))) return [...p.images];
+  return up;
+}
 export const videoFor = (img: string) => video.get(img);
 
 export function spinFor(slug: string) {
