@@ -13,7 +13,7 @@ import Faq from "@/components/Faq";
 import ContactBlock from "@/components/ContactBlock";
 import MotionShowcase from "@/components/MotionShowcase";
 import Reveal from "@/components/Reveal";
-import packs from "@/data/design-packs.json";
+import { motionPhoto, videoFor } from "@/lib/design-packs";
 import { discountPercent, getCategory, getProduct, getProducts, isLow, isOut, type Product } from "@/lib/catalog";
 import { formatPrice, store } from "@/lib/config";
 import { getSettings, getWilayas } from "@/lib/settings";
@@ -50,8 +50,7 @@ export default async function ProductPage({ params }: Props) {
   const [all, wilayas, settings, productReviews, allReviews] = await Promise.all([getProducts(), getWilayas(), getSettings(), getReviews(p.id), getReviews()]);
   const L = p.landing;
   // التصاميم الجداد فيهم الكتيبة، علاه الموشن ياخذ الصورة الحقيقية
-  const pack = (packs as Record<string, { images: string[]; photo: string }>)[p.slug];
-  const motionImage = pack && p.images.some((i) => pack.images.includes(i)) ? pack.photo : p.images[1] || p.images[0];
+  const motionImage = motionPhoto(p.slug, p.images);
   const off = discountPercent(p);
   const cat = getCategory(p.category);
   const related = all.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 4);
@@ -83,7 +82,7 @@ export default async function ProductPage({ params }: Props) {
           {cat && <> / <Link href={`/category/${cat.slug}`} className="hover:text-brand">{cat.name}</Link></>}
         </nav>
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="md:sticky md:top-28 md:self-start"><Gallery images={p.images} alt={p.name} badge={off} /></div>
+          <div className="md:sticky md:top-28 md:self-start"><Gallery images={p.images} videos={p.images.map((i) => videoFor(i) || "")} alt={p.name} badge={off} /></div>
           <div>
             {cat && <span className="inline-block rounded-full bg-brand/10 px-3 py-1 text-xs font-bold text-brand">{cat.icon} {cat.name}</span>}
             {L?.headline && <p className="mt-3 text-lg font-extrabold leading-snug text-brand md:text-xl">{L.headline}</p>}

@@ -1,6 +1,8 @@
 {
   "bulb-camera-360": {
-    "images": ["/designs/bulb-camera-360/1.webp", "/designs/bulb-camera-360/2.webp", "/designs/bulb-camera-360/3.webp", "/designs/bulb-camera-360/4.webp"],
-    "photo": "/designs/bulb-camera-360/photo.webp"
+    "images": ["/designs/bulb-camera-360/m1.webp", "/designs/bulb-camera-360/m2.webp", "/designs/bulb-camera-360/m3.webp", "/designs/bulb-camera-360/m4.webp"],
+    "videos": ["/designs/bulb-camera-360/m1.mp4", "/designs/bulb-camera-360/m2.mp4", "/designs/bulb-camera-360/m3.mp4", "/designs/bulb-camera-360/m4.mp4"],
+    "photo": "/designs/bulb-camera-360/m-photo.webp",
+    "legacy": ["/designs/bulb-camera-360/1.webp", "/designs/bulb-camera-360/2.webp", "/designs/bulb-camera-360/3.webp", "/designs/bulb-camera-360/4.webp"]
   }
 }

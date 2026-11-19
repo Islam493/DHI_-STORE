@@ -2,6 +2,7 @@ import seed from "@/data/products.json";
 import landingSeed from "@/data/landing.json";
 import { dbSelect, hasSupabase } from "./db";
 import { getSettings } from "./settings";
+import { upgradeImages } from "./design-packs";
 
 export type Variant = { name: string; price: number };
 
@@ -67,7 +68,7 @@ export const toRow = (p: Product): ProductRow => ({
 
 export const fromRow = (r: ProductRow): Product => ({
   id: r.id, slug: r.slug, name: r.name, tagline: r.tagline || "", category: r.category, active: r.active,
-  price: r.price, compareAtPrice: r.compare_at_price, variants: r.variants || [], images: r.images || [],
+  price: r.price, compareAtPrice: r.compare_at_price, variants: r.variants || [], images: upgradeImages(r.images || []),
   description: (r.description || "").split("\n").map((l) => l.trim()).filter(Boolean), sort: r.sort,
   // المحتوى المحفوظ فاللوحة له الأولوية، إلا إذا كان نسخة قديمة بلا قصة
   landing: r.landing && r.landing.headline && (r.landing.story || !landings[r.slug]?.story) ? r.landing : landings[r.slug],
