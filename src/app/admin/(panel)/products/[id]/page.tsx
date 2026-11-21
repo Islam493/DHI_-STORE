@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { api } from "@/components/admin/api";
 import { confirmAction } from "@/components/admin/ui";
 import { categories } from "@/lib/categories";
-import type { Landing, Product, Variant } from "@/lib/catalog";
+import type { Landing, Offer, Product, Variant } from "@/lib/catalog";
 
 type Form = {
   name: string; slug: string; tagline: string; category: string; active: boolean;
   price: string; compareAtPrice: string; description: string; images: string[]; variants: { name: string; price: string }[];
+  offers: { qty: string; price: string }[];
   // صفحة الهبوط (نص: كل سطر عنصر)
   sku: string; cost: string; lowStock: string; featured: boolean; stock: number | null;
   l_headline: string; l_sub: string; l_story: string; l_promise: string; l_ptitle: string; l_points: string; l_benefits: string; l_uses: string; l_notes: string; l_faqs: string; l_specs: string;
@@ -36,7 +37,7 @@ function formToLanding(f: Form): Landing {
   };
 }
 
-const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [], sku: "", cost: "", lowStock: "", featured: false, stock: null, ...landingToForm() };
+const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [], offers: [], sku: "", cost: "", lowStock: "", featured: false, stock: null, ...landingToForm() };
 
 // نصغرو الصورة فالتيليفون قبل ما نرفعوها (أسرع + أقل من الحد)
 async function shrink(file: File): Promise<Blob> {
@@ -70,6 +71,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         price: String(p.price), compareAtPrice: p.compareAtPrice ? String(p.compareAtPrice) : "",
         description: p.description.join("\n"), images: p.images,
         variants: p.variants.map((v: Variant) => ({ name: v.name, price: String(v.price) })),
+        offers: (p.offers || []).map((o: Offer) => ({ qty: String(o.qty), price: String(o.price) })),
         sku: p.sku || "", cost: p.cost != null ? String(p.cost) : "", lowStock: p.lowStock != null ? String(p.lowStock) : "",
         featured: !!p.featured, stock: p.stock ?? null,
         ...landingToForm(p.landing),
@@ -110,7 +112,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     void [l_headline, l_sub, l_story, l_promise, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs];
     const { stock: _s, ...rest2 } = rest;
     void _s;
-    const body = { ...rest2, price: Number(f.price), variants: f.variants.filter((v) => v.name.trim()), landing: formToLanding(f) };
+    const body = { ...rest2, price: Number(f.price), variants: f.variants.filter((v) => v.name.trim()), offers: f.offers.filter((o) => Number(o.qty) >= 1 && Number(o.price) > 0).map((o) => ({ qty: Number(o.qty), price: Number(o.price) })), landing: formToLanding(f) };
     try {
       if (isNew) await api("/api/admin/products", { method: "POST", body: JSON.stringify(body) });
       else await api(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify(body) });
@@ -209,6 +211,24 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
           </div>
         ))}
         <button type="button" onClick={() => set("variants", [...f.variants, { name: "", price: f.price }])} className="rounded-xl bg-soft px-4 py-2 text-sm font-bold text-navy">➕ زيد نوع</button>
+      </section>
+
+      <section className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-line">
+        <label className={label}>🎁 العروض <span className="font-normal text-muted">(اختياري — عدد القطع والسعر الكامل تاعهم)</span></label>
+        <p className="text-xs text-muted">مثال: 2 قطع بـ 10,000 دج. الزبون يشوفهم فالفورم ويختار واحد، و«قطعة وحدة» تبان وحدها بالسعر العادي. {f.variants.length > 0 && <b className="text-sale">العروض ما يخدموش مع الأنواع/الألوان.</b>}</p>
+        {f.offers.map((o, i) => {
+          const save = Number(f.price) * Number(o.qty) - Number(o.price);
+          return (
+            <div key={i} className="flex items-center gap-2">
+              <input className={`${input} w-24`} inputMode="numeric" placeholder="القطع" value={o.qty} onChange={(e) => set("offers", f.offers.map((x, k) => (k === i ? { ...x, qty: e.target.value.replace(/\D/g, "").slice(0, 2) } : x)))} />
+              <span className="text-sm font-bold">قطع بـ</span>
+              <input className={`${input} w-36`} inputMode="numeric" placeholder="السعر الكامل" value={o.price} onChange={(e) => set("offers", f.offers.map((x, k) => (k === i ? { ...x, price: e.target.value.replace(/\D/g, "") } : x)))} />
+              <span className="hidden text-xs font-bold text-ok sm:inline">{save > 0 ? `يوفّر ${save.toLocaleString("en-US")} دج` : ""}</span>
+              <button type="button" onClick={() => set("offers", f.offers.filter((_, k) => k !== i))} className="mr-auto rounded-xl bg-sale/10 px-3 py-2 font-bold text-sale">✕</button>
+            </div>
+          );
+        })}
+        {f.offers.length < 4 && <button type="button" onClick={() => { const q = Math.max(1, ...f.offers.map((o) => Number(o.qty) || 1)) + 1; set("offers", [...f.offers, { qty: String(q), price: "" }]); }} className="rounded-xl bg-soft px-4 py-2 text-sm font-bold text-navy">➕ زيد عرض</button>}
       </section>
 
       <details className="rounded-2xl bg-white p-4 ring-1 ring-line" open={isNew ? undefined : true}>

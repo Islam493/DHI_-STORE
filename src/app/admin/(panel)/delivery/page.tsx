@@ -15,6 +15,7 @@ type Row = { code: number; name: string; home: string; desk: string };
 export default function Delivery() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [carrier, setCarrier] = useState(false);
+  const [weLive, setWeLive] = useState(0);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [bulk, setBulk] = useState({ home: "", desk: "" });
@@ -26,8 +27,9 @@ export default function Delivery() {
   useEffect(() => { loadRep(); }, [st]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    api<{ wilayas: Wilaya[]; carrier: boolean }>("/api/admin/settings").then((d) => {
+    api<{ wilayas: Wilaya[]; live: Wilaya[]; carrier: boolean }>("/api/admin/settings").then((d) => {
       setCarrier(d.carrier);
+      setWeLive(d.live.filter((l, i) => l.home !== d.wilayas[i]?.home || l.desk !== d.wilayas[i]?.desk).length);
       setRows(d.wilayas.map((w) => ({ code: w.code, name: w.name, home: String(w.home), desk: w.desk === null ? "" : String(w.desk) })));
     }).catch((e) => setMsg({ ok: false, text: e.message }));
   }, []);
@@ -116,7 +118,9 @@ export default function Delivery() {
 
       {tab === "fees" && <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
         <h2 className="font-extrabold text-navy">💰 أسعار التوصيل</h2>
-        <p className="mb-3 text-xs text-muted">هادو الأسعار يبانو للزبون فالفورم. خلي «للمكتب» فارغ إذا ما كانش مكتب فالولاية.</p>
+        {weLive > 0
+          ? <p className="mb-3 rounded-xl bg-ok/10 p-3 text-sm font-bold text-ok">✅ الزبون يشوف أسعار World Express أوتوماتيك (تتبدل من صفحة 💹 الأرباح). هادو الأسعار اليدوية يخدمو غير إذا World Express ما ردّتش.</p>
+          : <p className="mb-3 text-xs text-muted">هادو الأسعار يبانو للزبون فالفورم. خلي «للمكتب» فارغ إذا ما كانش مكتب فالولاية.</p>}
         <div className="mb-4 flex flex-wrap items-end gap-2 rounded-xl bg-soft p-3">
           <span className="w-full text-sm font-bold">نفس السعر لكل الولايات:</span>
           <input className={`${input} w-28`} inputMode="numeric" placeholder="للدار" value={bulk.home} onChange={(e) => setBulk({ ...bulk, home: e.target.value.replace(/\D/g, "") })} />

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { audit } from "@/lib/audit";
-import { getSettings, getWilayas, saveSettings, type Settings } from "@/lib/settings";
+import { getManualWilayas, getSettings, getWilayas, saveSettings, type Settings } from "@/lib/settings";
 import { defaultWilayas, type Fees } from "@/lib/wilayas";
 import { carrier } from "@/lib/ecotrack";
 import { actor, fail, guard, refreshSite } from "@/lib/admin-api";
@@ -11,7 +11,7 @@ export async function GET() {
   const g = await guard("orders.view"); if (g) return g;
   try {
     const s = await getSettings(true);
-    return NextResponse.json({ whatsapp: s.whatsapp, whatsapp2: s.whatsapp2, phone: s.phone, phone2: s.phone2, pixels: s.pixels, blocked: s.blocked, content: s.content, wilayas: await getWilayas(true), carrier: carrier.enabled });
+    return NextResponse.json({ whatsapp: s.whatsapp, whatsapp2: s.whatsapp2, phone: s.phone, phone2: s.phone2, pixels: s.pixels, blocked: s.blocked, content: s.content, wilayas: await getManualWilayas(true), live: await getWilayas(true), carrier: carrier.enabled });
   } catch (e) { return fail(e); }
 }
 

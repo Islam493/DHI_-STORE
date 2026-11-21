@@ -5,6 +5,15 @@ import { getSettings } from "./settings";
 import { packImages } from "./design-packs";
 
 export type Variant = { name: string; price: number };
+// عرض: عدد القطع والسعر الكامل تاعهم (مثال: 2 قطع بـ 10,000 دج)
+export type Offer = { qty: number; price: number };
+export function cleanOffers(v: unknown): Offer[] {
+  const seen = new Set<number>();
+  return (Array.isArray(v) ? v : [])
+    .map((o: { qty?: unknown; price?: unknown }) => ({ qty: Math.round(Number(o?.qty)), price: Math.round(Number(o?.price)) }))
+    .filter((o) => o.qty >= 1 && o.qty <= 10 && o.price > 0 && !seen.has(o.qty) && (seen.add(o.qty), true))
+    .sort((a, b) => a.qty - b.qty).slice(0, 5);
+}
 
 // محتوى صفحة الهبوط تاع كل منتج (يتبدل من اللوحة)
 export type Landing = {
@@ -18,6 +27,7 @@ export type Landing = {
   specs: Record<string, string>;
   story?: string; // قصة قصيرة من القلب ("تخيّل...")
   promise?: string; // الوعد فالأخير
+  offers?: Offer[];
 };
 const landings = landingSeed as Record<string, Landing>;
 export const emptyLanding = (): Landing => ({ headline: "", sub: "", problem: { title: "", points: [] }, benefits: [], uses: [], notes: [], faqs: [], specs: {} });
@@ -40,6 +50,7 @@ export type Product = {
   sku?: string | null;
   cost?: number | null; // سعر الشراء (للمدير برك)
   featured?: boolean;
+  offers?: Offer[];
 };
 
 export type ProductRow = {
@@ -58,7 +69,7 @@ export const toRow = (p: Product): ProductRow => ({
   id: p.id, slug: p.slug, name: p.name, tagline: p.tagline || null, category: p.category, active: p.active,
   price: p.price, compare_at_price: p.compareAtPrice, variants: p.variants || [], images: p.images || [],
   description: (p.description || []).join("\n"), sort: p.sort ?? 0,
-  ...(p.landing ? { landing: p.landing } : {}),
+  ...(p.landing || p.offers?.length ? { landing: { ...(p.landing ?? emptyLanding()), offers: p.offers ?? [] } } : {}),
   ...(p.stock !== undefined ? { stock: p.stock } : {}),
   ...(p.lowStock !== undefined ? { low_stock: p.lowStock } : {}),
   ...(p.sku !== undefined ? { sku: p.sku } : {}),
@@ -77,6 +88,7 @@ export const fromRow = (r: ProductRow): Product => ({
   sku: r.sku || null,
   cost: typeof r.cost === "number" ? r.cost : null,
   featured: !!r.featured,
+  offers: cleanOffers(r.landing?.offers),
 });
 
 // المتجر ما يشوفش سعر الشراء

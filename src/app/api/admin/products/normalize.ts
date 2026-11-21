@@ -1,4 +1,4 @@
-import { categories, emptyLanding, type Landing, type Product } from "@/lib/catalog";
+import { categories, cleanOffers, emptyLanding, type Landing, type Product } from "@/lib/catalog";
 
 const int = (v: unknown) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= 0 ? n : NaN; };
 
@@ -36,6 +36,7 @@ export function normalize(b: Record<string, unknown>, all: Product[], selfId?: s
       cost: b.cost === "" || b.cost == null ? null : (Number.isNaN(int(b.cost)) ? null : int(b.cost)),
       lowStock: b.lowStock === "" || b.lowStock == null ? null : (Number.isNaN(int(b.lowStock)) ? null : int(b.lowStock)),
       featured: b.featured === true,
+      offers: cleanOffers(b.offers),
     },
   };
 }

@@ -1,5 +1,6 @@
 import { dbSelect, dbUpsert, hasSupabase } from "./db";
 import { withFees, type Fees } from "./wilayas";
+import { carrier, carrierFees, type CarrierFee } from "./ecotrack";
 
 // معلومات التواصل الرسمية (القيم الافتراضية — تتبدل من اللوحة: الإعدادات)
 export const OFFICIAL = {
@@ -110,7 +111,28 @@ export async function saveSettings(patch: Partial<Settings>) {
   await dbUpsert("settings", { id: 1, data: { ...cur, ...patch }, updated_at: new Date().toISOString() });
 }
 
+// أسعار التوصيل للزبون = أسعار World Express. المكتب يبان غير وين كاين مكتب (سعر المكتب > 0)
+async function carrierPrices(s: Settings): Promise<Record<string, CarrierFee> | null> {
+  const saved = (s.profit?.carrierFees || {}) as Record<string, CarrierFee>;
+  if (Object.values(saved).some((f) => Number(f?.home) > 0)) return saved;
+  if (!carrier.enabled) return null;
+  try { return (await carrierFees(true)).fees; } catch { return null; }
+}
+
 export async function getWilayas(fresh = false) {
+  const s = await getSettings(fresh);
+  const base = withFees(s.fees);
+  const we = await carrierPrices(s);
+  if (!we) return base;
+  return base.map((w) => {
+    const f = we[w.code];
+    if (!f || !(Number(f.home) > 0)) return w;
+    return { ...w, home: Number(f.home), desk: Number(f.desk) > 0 ? Number(f.desk) : null };
+  });
+}
+
+// الأسعار اليدوية برك (لصفحة الإعدادات)
+export async function getManualWilayas(fresh = false) {
   return withFees((await getSettings(fresh)).fees);
 }
 

@@ -3,6 +3,8 @@ import { getProduct } from "@/lib/catalog";
 import { getSettings, getWilayas } from "@/lib/settings";
 import { saveOrder, notifyTelegram, type Order } from "@/lib/orders";
 import { adjustStock, availableStock } from "@/lib/stock";
+import { carrier, communes, type Commune } from "@/lib/ecotrack";
+import { formatPrice } from "@/lib/config";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
 const hits = new Map<string, number[]>();
@@ -41,8 +43,16 @@ export async function POST(req: Request) {
   if (!/^0[567]\d{8}$/.test(phone)) errors.phone = "رقم الهاتف لازم يبدا بـ 05 / 06 / 07 وفيه 10 أرقام";
   const wilaya = (await getWilayas()).find((w) => w.code === wilayaCode);
   if (!wilaya) errors.wilaya = "اختار الولاية";
-  if (commune.length < 2) errors.commune = "دخّل البلدية";
-  if (method === "home" && address.length < 3) errors.address = "دخّل العنوان";
+  if (commune.length < 2) errors.commune = method === "desk" ? "اختار المكتب" : "اختار البلدية";
+  // البلديات والمكاتب من World Express: لازم البلدية تكون فالقائمة تاعهم
+  let list: Commune[] = [];
+  if (wilaya && carrier.enabled) { try { list = await communes(wilaya.code, true); } catch { list = []; } }
+  if (wilaya && list.length && commune.length >= 2) {
+    const c = list.find((x) => x.name.toLowerCase() === commune.toLowerCase());
+    if (!c) errors.commune = "اختار البلدية من القائمة";
+    else if (method === "desk" && !c.desk) errors.commune = "ما كانش مكتب فهاد البلدية، اختار مكتب من القائمة";
+  }
+  if (wilaya && method === "desk" && list.length && !list.some((x) => x.desk)) errors.method = "ما كانش مكتب فهاد الولاية، اختار التوصيل للدار";
 
   const product = await getProduct(clean(body.product, 100));
   if (!product) return NextResponse.json({ error: "المنتج غير متوفر" }, { status: 400 });
@@ -57,6 +67,11 @@ export async function POST(req: Request) {
 
   const fee = wilaya ? (method === "desk" ? wilaya.desk : wilaya.home) : null;
   if (wilaya && fee === null) errors.method = "ما كانش مكتب فهاد الولاية، اختار التوصيل للدار";
+
+  // العروض: عدد القطع بسعر كامل (غير للمنتجات بلا أنواع)
+  const offer = !product.variants.length ? (product.offers || []).find((o) => o.qty === quantity) : undefined;
+  const subtotal = offer ? offer.price : unitPrice * quantity;
+  if (offer) unitPrice = Math.round(offer.price / offer.qty);
 
   if (Object.keys(errors).length) return NextResponse.json({ errors }, { status: 422 });
 
@@ -87,8 +102,8 @@ export async function POST(req: Request) {
     quantity,
     unit_price: unitPrice,
     shipping_fee: fee!,
-    total: unitPrice * quantity + fee!,
-    note,
+    total: subtotal + fee!,
+    note: [offer ? `🎁 عرض: ${offer.qty} قطع بـ ${formatPrice(offer.price)}` : "", note].filter(Boolean).join(" — "),
     ip,
   };
 

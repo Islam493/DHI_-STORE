@@ -4,12 +4,12 @@ const TOKEN = process.env.ECOTRACK_TOKEN?.trim();
 
 export const carrier = { name: "World Express", enabled: Boolean(TOKEN), trackUrl: (t: string) => `https://suivi.ecotrack.dz/suivi/${encodeURIComponent(t)}` };
 
-async function call(path: string, init?: RequestInit) {
+async function call(path: string, init?: RequestInit, revalidate?: number) {
   if (!TOKEN) throw new Error("مفتاح World Express مازال ما تحطش فـ Vercel (ECOTRACK_TOKEN)");
   const res = await fetch(`${BASE}/api/v1/${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json", ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers },
-    cache: "no-store",
+    ...(revalidate ? { next: { revalidate } } : { cache: "no-store" as const }),
   });
   if (res.status === 401 || res.status === 403) throw new Error("مفتاح World Express غالط ولا ما عندوش صلاحية API");
   return res;
@@ -17,8 +17,8 @@ async function call(path: string, init?: RequestInit) {
 
 export type Commune = { name: string; desk: boolean };
 
-export async function communes(wilaya: number): Promise<Commune[]> {
-  const res = await call(`get/communes?wilaya_id=${wilaya}`);
+export async function communes(wilaya: number, cached = false): Promise<Commune[]> {
+  const res = await call(`get/communes?wilaya_id=${wilaya}`, undefined, cached ? 86400 : undefined);
   if (!res.ok) throw new Error(`World Express: ${res.status}`);
   const data = await res.json();
   const list: Record<string, unknown>[] = Array.isArray(data) ? data : Object.values(data?.data ?? data ?? {});
@@ -59,8 +59,8 @@ const firstNum = (o: Record<string, unknown>, keys: string[]) => {
   for (const k of keys) { const v = Number(o[k]); if (o[k] !== undefined && o[k] !== null && o[k] !== "" && Number.isFinite(v)) return v; }
   return null;
 };
-export async function carrierFees(): Promise<{ fees: Record<number, CarrierFee>; keys: string[] }> {
-  const res = await call("get/fees");
+export async function carrierFees(cached = false): Promise<{ fees: Record<number, CarrierFee>; keys: string[] }> {
+  const res = await call("get/fees", undefined, cached ? 21600 : undefined);
   if (!res.ok) throw new Error(`World Express: ${res.status}`);
   const data = await res.json();
   const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.livraison) ? data.livraison : Array.isArray(data?.data) ? data.data : Object.values(data?.livraison ?? data ?? {});
