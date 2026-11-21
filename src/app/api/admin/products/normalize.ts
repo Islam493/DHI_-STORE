@@ -52,6 +52,7 @@ function cleanLanding(v: unknown): Landing | null {
   e.headline = t(l.headline, 160);
   e.story = t(l.story, 800);
   e.promise = t(l.promise, 160);
+  if (typeof l.hideReviews === "boolean") e.hideReviews = l.hideReviews;
   e.sub = t(l.sub, 300);
   e.problem = { title: t(problem.title, 120), points: arr(problem.points, 6, 200) };
   e.benefits = (Array.isArray(l.benefits) ? l.benefits : []).map((x: Record<string, unknown>) => ({ icon: t(x?.icon, 8) || "✅", title: t(x?.title, 80), text: t(x?.text, 250) })).filter((x) => x.title).slice(0, 12);

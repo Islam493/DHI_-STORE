@@ -56,6 +56,8 @@ export default async function ProductPage({ params }: Props) {
   const related = all.filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 4);
   const others = related.length ? related : all.filter((x) => x.slug !== p.slug).slice(0, 4);
   const sum = summarize(productReviews);
+  // آراء الزبائن: صاحب المتجر يقرر من اللوحة، والهواتف مخبيين بالأصل
+  const reviewsOn = typeof L?.hideReviews === "boolean" ? !L.hideReviews : p.category !== "phones";
   const storeReviews = allReviews.filter((r) => !r.product_id);
   const faqs = [...(L?.faqs || []), ...settings.content.faqs];
   const cmp = comparison(p, all);
@@ -65,7 +67,7 @@ export default async function ProductPage({ params }: Props) {
       "@context": "https://schema.org", "@type": "Product", name: p.name, image: p.images.map(abs),
       description: (L?.sub || p.description.join(" ")).slice(0, 500), brand: { "@type": "Brand", name: store.name },
       offers: { "@type": "Offer", priceCurrency: "DZD", price: p.price, availability: isOut(p) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock", url: `${store.url}/products/${p.slug}` },
-      ...(sum.count ? { aggregateRating: { "@type": "AggregateRating", ratingValue: sum.avg, reviewCount: sum.count } } : {}),
+      ...(reviewsOn && sum.count ? { aggregateRating: { "@type": "AggregateRating", ratingValue: sum.avg, reviewCount: sum.count } } : {}),
     },
     ...(faqs.length ? [{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) }] : []),
   ];
@@ -88,7 +90,7 @@ export default async function ProductPage({ params }: Props) {
             {L?.headline && <p className="mt-3 text-lg font-extrabold leading-snug text-brand md:text-xl">{L.headline}</p>}
             <h1 className="mt-1 text-2xl font-extrabold leading-snug text-navy md:text-3xl">{p.name}</h1>
             {L?.sub && <p className="mt-2 leading-7 text-muted">{L.sub}</p>}
-            {sum.count > 0 && (
+            {reviewsOn && sum.count > 0 && (
               <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-sm"><Stars value={sum.avg} /> <b>{sum.avg.toFixed(1)}</b> <span className="text-muted">({sum.count} رأي)</span></a>
             )}
             <div className="mt-4 flex flex-wrap items-baseline gap-3">
@@ -183,7 +185,7 @@ export default async function ProductPage({ params }: Props) {
         )}
 
         {/* 6. الآراء */}
-        <Reviews reviews={productReviews.length ? productReviews : storeReviews} title={productReviews.length ? "آراء الزبائن على هاد المنتج" : "آراء زبائن DHI Electronics"} />
+        {reviewsOn && <Reviews reviews={productReviews.length ? productReviews : storeReviews} title={productReviews.length ? "آراء الزبائن على هاد المنتج" : "آراء زبائن DHI Electronics"} />}
 
         {/* 7. الثقة */}
         <section className="grid gap-4 md:grid-cols-3">

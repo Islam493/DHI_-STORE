@@ -13,13 +13,15 @@ type Form = {
   offers: { qty: string; price: string }[];
   // صفحة الهبوط (نص: كل سطر عنصر)
   sku: string; cost: string; lowStock: string; featured: boolean; stock: number | null;
+  l_reviews: boolean;
   l_headline: string; l_sub: string; l_story: string; l_promise: string; l_ptitle: string; l_points: string; l_benefits: string; l_uses: string; l_notes: string; l_faqs: string; l_specs: string;
 };
 
 const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
 const split = (s: string) => s.split("|").map((x) => x.trim());
-function landingToForm(l?: Landing) {
+function landingToForm(l?: Landing, category = "") {
   return {
+    l_reviews: typeof l?.hideReviews === "boolean" ? !l.hideReviews : category !== "phones",
     l_headline: l?.headline || "", l_sub: l?.sub || "", l_story: l?.story || "", l_promise: l?.promise || "", l_ptitle: l?.problem.title || "", l_points: (l?.problem.points || []).join("\n"),
     l_benefits: (l?.benefits || []).map((b) => `${b.icon} | ${b.title} | ${b.text}`).join("\n"),
     l_uses: (l?.uses || []).join("\n"), l_notes: (l?.notes || []).join("\n"),
@@ -34,6 +36,7 @@ function formToLanding(f: Form): Landing {
     uses: lines(f.l_uses), notes: lines(f.l_notes),
     faqs: lines(f.l_faqs).map((l) => { const [q, ...a] = split(l); return { q, a: a.join(" | ") }; }).filter((x) => x.a),
     specs: Object.fromEntries(lines(f.l_specs).map((l) => { const [k, ...v] = split(l); return [k, v.join(" | ")]; }).filter(([, v]) => v)),
+    hideReviews: !f.l_reviews,
   };
 }
 
@@ -74,7 +77,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         offers: (p.offers || []).map((o: Offer) => ({ qty: String(o.qty), price: String(o.price) })),
         sku: p.sku || "", cost: p.cost != null ? String(p.cost) : "", lowStock: p.lowStock != null ? String(p.lowStock) : "",
         featured: !!p.featured, stock: p.stock ?? null,
-        ...landingToForm(p.landing),
+        ...landingToForm(p.landing, p.category),
       });
     }).catch((e) => setErr(e.message));
   }, [id, isNew]);
@@ -108,8 +111,8 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   async function save() {
     setSaving(true); setErr("");
     if (!f) return;
-    const { l_headline, l_sub, l_story, l_promise, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs, ...rest } = f;
-    void [l_headline, l_sub, l_story, l_promise, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs];
+    const { l_reviews, l_headline, l_sub, l_story, l_promise, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs, ...rest } = f;
+    void [l_reviews, l_headline, l_sub, l_story, l_promise, l_ptitle, l_points, l_benefits, l_uses, l_notes, l_faqs, l_specs];
     const { stock: _s, ...rest2 } = rest;
     void _s;
     const body = { ...rest2, price: Number(f.price), variants: f.variants.filter((v) => v.name.trim()), offers: f.offers.filter((o) => Number(o.qty) >= 1 && Number(o.price) > 0).map((o) => ({ qty: Number(o.qty), price: Number(o.price) })), landing: formToLanding(f) };
@@ -155,6 +158,10 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
           <label className="flex items-center gap-3 rounded-xl bg-soft p-3 font-bold">
             <input type="checkbox" className="size-5" checked={f.featured} onChange={(e) => set("featured", e.target.checked)} />
             ⭐ منتج مميز (فالرئيسية)
+          </label>
+          <label className="flex items-center gap-3 rounded-xl bg-soft p-3 font-bold">
+            <input type="checkbox" className="size-5" checked={f.l_reviews} onChange={(e) => set("l_reviews", e.target.checked)} />
+            💬 يبان قسم «آراء الزبائن» فصفحة المنتج
           </label>
         </div>
       </section>
