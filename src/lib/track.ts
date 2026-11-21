@@ -32,5 +32,10 @@ export function track(event: Ev, data: Data, tries = 0) {
   const tt = event === "Purchase" ? "CompletePayment" : event;
   const sc = { ViewContent: "VIEW_CONTENT", InitiateCheckout: "START_CHECKOUT", Purchase: "PURCHASE" }[event];
   w.snaptr?.("track", sc, { item_ids: [data.id], price: data.value, currency: "DZD", number_items: data.quantity ?? 1 });
-  w.ttq?.track(tt, { content_id: data.id, content_name: data.name, content_type: "product", value: data.value, currency: "DZD", quantity: data.quantity ?? 1 });
+  // تيك توك: الشكل الجديد (contents) + القديم باش يخدمو الزوج
+  const qty = data.quantity ?? 1;
+  w.ttq?.track(tt, {
+    contents: [{ content_id: data.id, content_type: "product", content_name: data.name, quantity: qty, price: Math.round(data.value / qty) }],
+    content_id: data.id, content_name: data.name, content_type: "product", value: data.value, currency: "DZD", quantity: qty,
+  });
 }
