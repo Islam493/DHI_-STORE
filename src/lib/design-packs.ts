@@ -1,38 +1,26 @@
 import packs from "@/data/design-packs.json";
 
-// تصاميم DHI لكل منتج: صور (تبان فالكروت) + فيديو موشن لكل صورة (يتلعب فصفحة المنتج)
-// spin: صور 360° الحقيقية (dir/01.webp ... dir/NN.webp) من فيديو المنتج وهو يدور
-// replace: الصور الأصلية تاع المنتج؛ إذا مازال بيهم برك، يولّي بالتصاميم الجداد وحدو
-export type DesignPack = { images: string[]; videos?: string[]; photo: string; legacy?: string[]; replace?: string[]; spin?: { dir: string; count: number; reverse?: boolean } };
-export const designPacks = packs as Record<string, DesignPack>;
+// صور المنتجات = الإعلانات اللي صممهم صاحب المتجر، كيما هوما (بلا قص وبلا تبديل)
+type Packs = { restore: Record<string, string[]>; extra?: Record<string, string[]>; spin?: Record<string, { dir: string; count: number; reverse?: boolean }> };
+const P = packs as Packs;
 
-const upgrade = new Map<string, string>();
-const video = new Map<string, string>();
-for (const p of Object.values(designPacks)) {
-  // النسخة القديمة تتبدل وحدها بالجديدة (نفس الترتيب) بلا ما تعاود تحفظ المنتج
-  p.legacy?.forEach((u, k) => p.images[k] && upgrade.set(u, p.images[k]));
-  p.videos?.forEach((v, k) => p.images[k] && video.set(p.images[k], v));
-}
-
-export const upgradeImages = (list: string[]) => list.map((u) => upgrade.get(u) || u);
-
-// صور المنتج النهائية: التصاميم الجداد كي يكون مازال بالصور الأصلية، وإلا صور صاحب المتجر كيما هي
 export function packImages(slug: string, list: string[]) {
-  const up = upgradeImages(list);
-  const p = designPacks[slug];
-  if (p?.replace && up.every((u) => p.replace!.includes(u))) return [...p.images];
-  return up;
+  // التصاميم القدام (/designs/) تتنحاو، وإذا ما بقا والو نرجعو للإعلان الأصلي
+  const clean = list.filter((u) => !u.startsWith("/designs/"));
+  const base = clean.length ? clean : P.restore[slug] || [];
+  const orig = P.restore[slug] || [];
+  const untouched = base.length === orig.length && base.every((u, k) => u === orig[k]);
+  const extra = untouched ? (P.extra?.[slug] || []).filter((u) => !base.includes(u)) : [];
+  return [...base, ...extra];
 }
-export const videoFor = (img: string) => video.get(img);
+
+export const videoFor = (_img: string): string | undefined => undefined;
 
 export function spinFor(slug: string) {
-  const s = designPacks[slug]?.spin;
+  const s = P.spin?.[slug];
   if (!s || s.count < 8) return undefined;
   return { frames: Array.from({ length: s.count }, (_, k) => `${s.dir}/${String(k + 1).padStart(2, "0")}.webp`), reverse: s.reverse };
 }
 
-// صورة قسم الموشن: الكاميرا الحقيقية مقطوعة، كي التصاميم مستعملين
-export function motionPhoto(slug: string, images: string[]) {
-  const pack = designPacks[slug];
-  return pack && images.some((i) => pack.images.includes(i)) ? pack.photo : images[1] || images[0];
-}
+// قسم الموشن: الإعلان الأول تاع المنتج
+export const motionPhoto = (_slug: string, images: string[]) => images[0];

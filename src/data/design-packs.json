@@ -1,224 +1,51 @@
 {
-  "bulb-camera-360": {
-    "images": [
-      "/designs/bulb-camera-360/m1.webp",
-      "/designs/bulb-camera-360/m2.webp",
-      "/designs/bulb-camera-360/m3.webp",
-      "/designs/bulb-camera-360/m4.webp"
+  "restore": {
+    "okam-pro-4g-solar-dual": [
+      "/products/okam-pro-4g-solar-dual-1.png"
     ],
-    "videos": [
-      "/designs/bulb-camera-360/m1.mp4",
-      "/designs/bulb-camera-360/m2.mp4",
-      "/designs/bulb-camera-360/m3.mp4",
-      "/designs/bulb-camera-360/m4.mp4"
+    "dummy-solar-camera": [
+      "/products/dummy-solar-camera-1.png"
     ],
-    "photo": "/designs/bulb-camera-360/m-photo.webp",
-    "legacy": [
-      "/designs/bulb-camera-360/1.webp",
-      "/designs/bulb-camera-360/2.webp",
-      "/designs/bulb-camera-360/3.webp",
-      "/designs/bulb-camera-360/4.webp"
+    "video-intercom": [
+      "/products/video-intercom-1.png"
     ],
-    "replace": [
+    "dual-lens-wifi-camera": [
+      "/products/dual-lens-wifi-camera-1.png"
+    ],
+    "electronic-safe": [
+      "/products/electronic-safe-1.png"
+    ],
+    "hidden-clock-camera": [
+      "/products/hidden-clock-camera-1.png"
+    ],
+    "smart-tracker": [
+      "/products/smart-tracker-1.png"
+    ],
+    "solar-4g-2k-360": [
+      "/products/solar-4g-2k-360-1.png"
+    ],
+    "iphone-copy": [
+      "/products/iphone-copy-1.png"
+    ],
+    "solar-4g-camera": [
+      "/products/solar-4g-camera-1.png"
+    ],
+    "smart-security-camera": [
+      "/products/smart-security-camera-1.png"
+    ],
+    "dual-lens-wifi-camera-2": [
+      "/products/dual-lens-wifi-camera-2-1.png"
+    ],
+    "inspection-camera": [
+      "/products/inspection-camera-1.png"
+    ],
+    "bulb-camera-360": [
       "/products/bulb-camera-360-1.png"
     ]
   },
-  "okam-pro-4g-solar-dual": {
-    "images": [
-      "/designs/okam-pro-4g-solar-dual/m1.webp",
-      "/designs/okam-pro-4g-solar-dual/m2.webp",
-      "/designs/okam-pro-4g-solar-dual/m3.webp",
-      "/designs/okam-pro-4g-solar-dual/m4.webp"
-    ],
-    "videos": [
-      "/designs/okam-pro-4g-solar-dual/m1.mp4",
-      "/designs/okam-pro-4g-solar-dual/m2.mp4",
-      "/designs/okam-pro-4g-solar-dual/m3.mp4",
-      "/designs/okam-pro-4g-solar-dual/m4.mp4"
-    ],
-    "photo": "/designs/okam-pro-4g-solar-dual/m-photo.webp",
-    "replace": [
-      "/products/okam-pro-4g-solar-dual-1.png"
-    ]
-  },
-  "dummy-solar-camera": {
-    "images": [
-      "/designs/dummy-solar-camera/m1.webp",
-      "/designs/dummy-solar-camera/m2.webp",
-      "/designs/dummy-solar-camera/m3.webp",
-      "/designs/dummy-solar-camera/m4.webp"
-    ],
-    "videos": [
-      "/designs/dummy-solar-camera/m1.mp4",
-      "/designs/dummy-solar-camera/m2.mp4",
-      "/designs/dummy-solar-camera/m3.mp4",
-      "/designs/dummy-solar-camera/m4.mp4"
-    ],
-    "photo": "/designs/dummy-solar-camera/m-photo.webp",
-    "replace": [
-      "/products/dummy-solar-camera-1.png"
-    ]
-  },
-  "dual-lens-wifi-camera": {
-    "images": [
-      "/designs/dual-lens-wifi-camera/m1.webp",
-      "/designs/dual-lens-wifi-camera/m2.webp",
-      "/designs/dual-lens-wifi-camera/m3.webp",
-      "/designs/dual-lens-wifi-camera/m4.webp"
-    ],
-    "videos": [
-      "/designs/dual-lens-wifi-camera/m1.mp4",
-      "/designs/dual-lens-wifi-camera/m2.mp4",
-      "/designs/dual-lens-wifi-camera/m3.mp4",
-      "/designs/dual-lens-wifi-camera/m4.mp4"
-    ],
-    "photo": "/designs/dual-lens-wifi-camera/m-photo.webp",
-    "replace": [
-      "/products/dual-lens-wifi-camera-1.png"
-    ]
-  },
-  "dual-lens-wifi-camera-2": {
-    "images": [
-      "/designs/dual-lens-wifi-camera-2/m1.webp",
-      "/designs/dual-lens-wifi-camera-2/m2.webp",
-      "/designs/dual-lens-wifi-camera-2/m3.webp",
-      "/designs/dual-lens-wifi-camera-2/m4.webp"
-    ],
-    "videos": [
-      "/designs/dual-lens-wifi-camera-2/m1.mp4",
-      "/designs/dual-lens-wifi-camera-2/m2.mp4",
-      "/designs/dual-lens-wifi-camera-2/m3.mp4",
-      "/designs/dual-lens-wifi-camera-2/m4.mp4"
-    ],
-    "photo": "/designs/dual-lens-wifi-camera-2/m-photo.webp",
-    "replace": [
-      "/products/dual-lens-wifi-camera-2-1.png"
-    ]
-  },
-  "electronic-safe": {
-    "images": [
-      "/designs/electronic-safe/m1.webp",
-      "/designs/electronic-safe/m2.webp",
-      "/designs/electronic-safe/m3.webp",
-      "/designs/electronic-safe/m4.webp"
-    ],
-    "videos": [
-      "/designs/electronic-safe/m1.mp4",
-      "/designs/electronic-safe/m2.mp4",
-      "/designs/electronic-safe/m3.mp4",
-      "/designs/electronic-safe/m4.mp4"
-    ],
-    "photo": "/designs/electronic-safe/m-photo.webp",
-    "replace": [
-      "/products/electronic-safe-1.png"
-    ]
-  },
-  "hidden-clock-camera": {
-    "images": [
-      "/designs/hidden-clock-camera/m1.webp",
-      "/designs/hidden-clock-camera/m2.webp",
-      "/designs/hidden-clock-camera/m3.webp",
-      "/designs/hidden-clock-camera/m4.webp"
-    ],
-    "videos": [
-      "/designs/hidden-clock-camera/m1.mp4",
-      "/designs/hidden-clock-camera/m2.mp4",
-      "/designs/hidden-clock-camera/m3.mp4",
-      "/designs/hidden-clock-camera/m4.mp4"
-    ],
-    "photo": "/designs/hidden-clock-camera/m-photo.webp",
-    "replace": [
-      "/products/hidden-clock-camera-1.png"
-    ]
-  },
-  "smart-tracker": {
-    "images": [
-      "/designs/smart-tracker/m1.webp",
-      "/designs/smart-tracker/m2.webp",
-      "/designs/smart-tracker/m3.webp",
-      "/designs/smart-tracker/m4.webp"
-    ],
-    "videos": [
-      "/designs/smart-tracker/m1.mp4",
-      "/designs/smart-tracker/m2.mp4",
-      "/designs/smart-tracker/m3.mp4",
-      "/designs/smart-tracker/m4.mp4"
-    ],
-    "photo": "/designs/smart-tracker/m-photo.webp",
-    "replace": [
-      "/products/smart-tracker-1.png"
-    ]
-  },
-  "solar-4g-2k-360": {
-    "images": [
-      "/designs/solar-4g-2k-360/m1.webp",
-      "/designs/solar-4g-2k-360/m2.webp",
-      "/designs/solar-4g-2k-360/m3.webp",
-      "/designs/solar-4g-2k-360/m4.webp"
-    ],
-    "videos": [
-      "/designs/solar-4g-2k-360/m1.mp4",
-      "/designs/solar-4g-2k-360/m2.mp4",
-      "/designs/solar-4g-2k-360/m3.mp4",
-      "/designs/solar-4g-2k-360/m4.mp4"
-    ],
-    "photo": "/designs/solar-4g-2k-360/m-photo.webp",
-    "replace": [
-      "/products/solar-4g-2k-360-1.png"
-    ]
-  },
-  "solar-4g-camera": {
-    "images": [
-      "/designs/solar-4g-camera/m1.webp",
-      "/designs/solar-4g-camera/m2.webp",
-      "/designs/solar-4g-camera/m3.webp",
-      "/designs/solar-4g-camera/m4.webp"
-    ],
-    "videos": [
-      "/designs/solar-4g-camera/m1.mp4",
-      "/designs/solar-4g-camera/m2.mp4",
-      "/designs/solar-4g-camera/m3.mp4",
-      "/designs/solar-4g-camera/m4.mp4"
-    ],
-    "photo": "/designs/solar-4g-camera/m-photo.webp",
-    "replace": [
-      "/products/solar-4g-camera-1.png"
-    ]
-  },
-  "smart-security-camera": {
-    "images": [
-      "/designs/smart-security-camera/m1.webp",
-      "/designs/smart-security-camera/m2.webp",
-      "/designs/smart-security-camera/m3.webp",
-      "/designs/smart-security-camera/m4.webp"
-    ],
-    "videos": [
-      "/designs/smart-security-camera/m1.mp4",
-      "/designs/smart-security-camera/m2.mp4",
-      "/designs/smart-security-camera/m3.mp4",
-      "/designs/smart-security-camera/m4.mp4"
-    ],
-    "photo": "/designs/smart-security-camera/m-photo.webp",
-    "replace": [
-      "/products/smart-security-camera-1.png"
-    ]
-  },
-  "inspection-camera": {
-    "images": [
-      "/designs/inspection-camera/m1.webp",
-      "/designs/inspection-camera/m2.webp",
-      "/designs/inspection-camera/m3.webp",
-      "/designs/inspection-camera/m4.webp"
-    ],
-    "videos": [
-      "/designs/inspection-camera/m1.mp4",
-      "/designs/inspection-camera/m2.mp4",
-      "/designs/inspection-camera/m3.mp4",
-      "/designs/inspection-camera/m4.mp4"
-    ],
-    "photo": "/designs/inspection-camera/m-photo.webp",
-    "replace": [
-      "/products/inspection-camera-1.png"
+  "extra": {
+    "okam-pro-4g-solar-dual": [
+      "/products/okam-pro-4g-solar-dual-2.webp"
     ]
   }
 }

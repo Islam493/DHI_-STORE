@@ -30,10 +30,10 @@ export default function Gallery({ images, videos = [], spin, alt, badge }: { ima
 
   return (
     <div>
-      <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-soft">
+      <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-white">
         {isSpin ? <Spin360 frames={spin.frames} reverse={spin.reverse} alt={alt} /> : (
           <>
-            <Image src={images[i]} alt={alt} fill priority sizes="(max-width:768px) 100vw, 50vw" className="object-cover" />
+            <Image src={images[i]} alt={alt} fill priority sizes="(max-width:768px) 100vw, 50vw" className="object-contain" />
             {vid && <video key={vid} src={vid} autoPlay muted loop playsInline preload="auto" aria-hidden className="absolute inset-0 size-full object-cover" />}
             {/* التصاميم فيهم اللوغو والتخفيض، ما نغطيوهمش */}
             {badge && !videos[i] ? <span className="absolute right-3 top-3 rounded-full bg-sale px-3 py-1 text-sm font-bold text-white"><bdi dir="ltr">-{badge}%</bdi></span> : null}

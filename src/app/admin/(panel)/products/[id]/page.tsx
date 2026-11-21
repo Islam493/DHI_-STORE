@@ -6,7 +6,6 @@ import { api } from "@/components/admin/api";
 import { confirmAction } from "@/components/admin/ui";
 import { categories } from "@/lib/categories";
 import type { Landing, Product, Variant } from "@/lib/catalog";
-import { designPacks } from "@/lib/design-packs";
 
 type Form = {
   name: string; slug: string; tagline: string; category: string; active: boolean;
@@ -101,8 +100,6 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  const pack = designPacks[f.slug];
-  const packUsed = !!pack && pack.images.every((u) => f.images.includes(u));
   const moveFirst = (i: number) => set("images", [f.images[i], ...f.images.filter((_, k) => k !== i)]);
   const removeImg = (i: number) => set("images", f.images.filter((_, k) => k !== i));
 
@@ -172,18 +169,6 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
           <div><label className={label}>تنبيه كي يبقى</label><input className={input} inputMode="numeric" value={f.lowStock} onChange={(e) => set("lowStock", e.target.value.replace(/\D/g, ""))} placeholder="3" /></div>
         </div>
       </section>
-
-      {pack && !packUsed && (
-        <section className="flex flex-wrap items-center gap-3 rounded-2xl bg-gradient-to-l from-navy to-navy-2 p-4 text-white">
-          <div className="flex -space-x-3 space-x-reverse">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {pack.images.map((u) => <img key={u} src={u} alt="" className="size-14 rounded-xl border-2 border-white object-cover" />)}
-          </div>
-          <div className="min-w-0 flex-1"><p className="font-extrabold">🎨 عندك {pack.images.length} صور جداد مصممين لهاد المنتج</p><p className="text-sm text-white/70">بستيل DHI، من الصورة الحقيقية تاعك{pack.videos ? " · فيهم موشن 🎬" : ""}</p></div>
-          <button type="button" onClick={() => setF({ ...f, images: [...pack.images] })} className="rounded-xl bg-brand px-4 py-2.5 font-bold">✨ استعملهم</button>
-        </section>
-      )}
-      {packUsed && <p className="rounded-xl bg-ok/10 p-3 text-sm font-bold text-ok">✅ التصاميم الجداد مستعملين{pack?.videos ? " (مع الموشن 🎬)" : ""} — إذا بدلت حاجة اضغط «💾 حفظ»</p>}
 
       <section className="rounded-2xl bg-white p-4 ring-1 ring-line">
         <label className={label}>الصور <span className="font-normal text-muted">(الأولى هي الرئيسية)</span></label>
