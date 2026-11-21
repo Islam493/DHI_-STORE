@@ -82,10 +82,14 @@ export const toRow = (p: Product): ProductRow => ({
 const PHONE = /iphone|ايفون|آيفون|smartphone|هاتف ذكي/i;
 const fixCategory = (cat: string, name: string) => (PHONE.test(name) && (cat === "cameras-4g" || !categories.some((c) => c.slug === cat)) ? "phones" : cat);
 
+// أسماء قديمة تتبدل (اللوحة تحفظ الاسم الجديد كي تضغط حفظ)
+const RENAME: Record<string, string> = { "iPhone Kobi": "iPhone 18 Pro Max Super Copy" };
+const fixName = (n: string) => RENAME[n.trim()] ?? n;
+
 const withReviewsFlag = (l: Landing | undefined, hide?: boolean) => (l && typeof hide === "boolean" ? { ...l, hideReviews: hide } : l);
 
 export const fromRow = (r: ProductRow): Product => ({
-  id: r.id, slug: r.slug, name: r.name, tagline: r.tagline || "", category: fixCategory(r.category, r.name), active: r.active,
+  id: r.id, slug: r.slug, name: fixName(r.name), tagline: r.tagline || "", category: fixCategory(r.category, r.name), active: r.active,
   price: r.price, compareAtPrice: r.compare_at_price, variants: r.variants || [], images: packImages(r.slug, r.images || []),
   description: (r.description || "").split("\n").map((l) => l.trim()).filter(Boolean), sort: r.sort,
   // المحتوى المحفوظ فاللوحة له الأولوية، إلا إذا كان نسخة قديمة بلا قصة
