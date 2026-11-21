@@ -85,7 +85,7 @@ export default async function Home() {
       {/* الأقسام */}
       <section className="mx-auto mt-14 max-w-6xl px-4">
         <div className="mb-5 flex items-end justify-between"><h2 className="text-2xl font-extrabold text-navy md:text-3xl">تسوّق حسب احتياجك</h2></div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           {categories.map((cat) => {
             const list = products.filter((p) => p.category === cat.slug);
             if (!list.length) return null;

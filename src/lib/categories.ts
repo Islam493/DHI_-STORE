@@ -5,4 +5,5 @@ export const categories = [
   { slug: "hidden", name: "كاميرات سرية", short: "سرية", icon: "🕵️" },
   { slug: "home-security", name: "أمان الدار", short: "أمان الدار", icon: "🏠" },
   { slug: "gadgets", name: "أجهزة ذكية", short: "أجهزة ذكية", icon: "🔍" },
+  { slug: "phones", name: "هواتف", short: "هواتف", icon: "📱" },
 ] as const;
