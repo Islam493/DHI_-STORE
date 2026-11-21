@@ -43,9 +43,5 @@
       "/products/bulb-camera-360-1.png"
     ]
   },
-  "extra": {
-    "okam-pro-4g-solar-dual": [
-      "/products/okam-pro-4g-solar-dual-2.webp"
-    ]
-  }
+  "packs": {}
 }
