@@ -77,17 +77,17 @@
     "dual-lens-wifi-camera-2": {
       "images": [
         "/ads/dual-lens-wifi-camera-2/1.webp",
-        "/ads/dual-lens-wifi-camera-2/2.webp",
-        "/ads/dual-lens-wifi-camera-2/3.webp",
-        "/ads/dual-lens-wifi-camera-2/4.webp"
+        "/ads/dual-lens-wifi-camera-2/2b.webp",
+        "/ads/dual-lens-wifi-camera-2/3b.webp",
+        "/ads/dual-lens-wifi-camera-2/4b.webp"
       ],
       "videos": [
         "/ads/dual-lens-wifi-camera-2/1.mp4",
-        "/ads/dual-lens-wifi-camera-2/2.mp4",
-        "/ads/dual-lens-wifi-camera-2/3.mp4",
-        "/ads/dual-lens-wifi-camera-2/4.mp4"
+        "/ads/dual-lens-wifi-camera-2/2b.mp4",
+        "/ads/dual-lens-wifi-camera-2/3b.mp4",
+        "/ads/dual-lens-wifi-camera-2/4b.mp4"
       ],
-      "photo": "/ads/dual-lens-wifi-camera-2/photo.webp"
+      "photo": "/ads/dual-lens-wifi-camera-2/photo-b.webp"
     },
     "dummy-solar-camera": {
       "images": [
@@ -152,17 +152,17 @@
     "okam-pro-4g-solar-dual": {
       "images": [
         "/ads/okam-pro-4g-solar-dual/1.webp",
-        "/ads/okam-pro-4g-solar-dual/2.webp",
-        "/ads/okam-pro-4g-solar-dual/3.webp",
-        "/ads/okam-pro-4g-solar-dual/4.webp"
+        "/ads/okam-pro-4g-solar-dual/2b.webp",
+        "/ads/okam-pro-4g-solar-dual/3b.webp",
+        "/ads/okam-pro-4g-solar-dual/4b.webp"
       ],
       "videos": [
         "/ads/okam-pro-4g-solar-dual/1.mp4",
-        "/ads/okam-pro-4g-solar-dual/2.mp4",
-        "/ads/okam-pro-4g-solar-dual/3.mp4",
-        "/ads/okam-pro-4g-solar-dual/4.mp4"
+        "/ads/okam-pro-4g-solar-dual/2b.mp4",
+        "/ads/okam-pro-4g-solar-dual/3b.mp4",
+        "/ads/okam-pro-4g-solar-dual/4b.mp4"
       ],
-      "photo": "/ads/okam-pro-4g-solar-dual/photo.webp"
+      "photo": "/ads/okam-pro-4g-solar-dual/photo-b.webp"
     },
     "smart-security-camera": {
       "images": [
