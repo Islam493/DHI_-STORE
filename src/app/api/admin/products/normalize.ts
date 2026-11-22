@@ -37,6 +37,7 @@ export function normalize(b: Record<string, unknown>, all: Product[], selfId?: s
       lowStock: b.lowStock === "" || b.lowStock == null ? null : (Number.isNaN(int(b.lowStock)) ? null : int(b.lowStock)),
       featured: b.featured === true,
       offers: cleanOffers(b.offers),
+      freeShipping: b.freeShipping === true,
     },
   };
 }
@@ -53,6 +54,7 @@ function cleanLanding(v: unknown): Landing | null {
   e.story = t(l.story, 800);
   e.promise = t(l.promise, 160);
   if (typeof l.hideReviews === "boolean") e.hideReviews = l.hideReviews;
+  if (l.freeShipping === true) e.freeShipping = true;
   e.sub = t(l.sub, 300);
   e.problem = { title: t(problem.title, 120), points: arr(problem.points, 6, 200) };
   e.benefits = (Array.isArray(l.benefits) ? l.benefits : []).map((x: Record<string, unknown>) => ({ icon: t(x?.icon, 8) || "✅", title: t(x?.title, 80), text: t(x?.text, 250) })).filter((x) => x.title).slice(0, 12);

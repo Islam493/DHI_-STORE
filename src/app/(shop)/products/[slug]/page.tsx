@@ -100,6 +100,11 @@ export default async function ProductPage({ params }: Props) {
                 <span className="rounded-full bg-sale/10 px-3 py-1 text-sm font-bold text-sale">وفّر {formatPrice(p.compareAtPrice! - p.price)}</span>
               </>}
             </div>
+            {p.freeShipping && (
+              <p className="free-ship mt-3 inline-flex items-center gap-2 rounded-2xl bg-ok/10 px-4 py-2 font-extrabold text-ok ring-1 ring-ok/25">
+                <span className="text-xl">🚚</span> التوصيل مجاني <span className="text-sm font-bold opacity-80">· لـ 58 ولاية</span>
+              </p>
+            )}
             {L?.benefits?.length ? (
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {L.benefits.slice(0, 4).map((b) => <li key={b.title} className="flex items-center gap-2 rounded-xl bg-soft px-3 py-2 text-sm font-bold text-navy"><span>{b.icon}</span>{b.title}</li>)}
@@ -296,7 +301,7 @@ export default async function ProductPage({ params }: Props) {
       {/* 12. شريط الشراء: ديما ظاهر من الدخول حتى الأخير (تيليفون وكمبيوتر) */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 p-3 backdrop-blur md:inset-x-auto md:bottom-5 md:left-1/2 md:w-[34rem] md:-translate-x-1/2 md:rounded-3xl md:border md:shadow-2xl">
         <a href="#order" className="cta-nudge cta-shine flex items-center justify-between rounded-2xl bg-brand px-5 py-3 font-extrabold text-white shadow-lg shadow-brand/30 md:py-3.5 md:text-lg">
-          <span className="leading-tight">{isOut(p) ? "نفذ المخزون" : "اطلب الآن"}<span className="block text-[11px] font-semibold opacity-80">{isOut(p) ? "راسلنا على الواتساب" : "💵 الدفع عند الاستلام"}</span></span>
+          <span className="leading-tight">{isOut(p) ? "نفذ المخزون" : "اطلب الآن"}<span className="block text-[11px] font-semibold opacity-80">{isOut(p) ? "راسلنا على الواتساب" : p.freeShipping ? "🚚 توصيل مجاني · 💵 الدفع عند الاستلام" : "💵 الدفع عند الاستلام"}</span></span>
           <span className="text-left">{formatPrice(p.price)}{off > 0 && <span className="block text-[11px] font-semibold line-through opacity-70">{formatPrice(p.compareAtPrice!)}</span>}</span>
         </a>
       </div>

@@ -11,6 +11,7 @@ type Form = {
   name: string; slug: string; tagline: string; category: string; active: boolean;
   price: string; compareAtPrice: string; description: string; images: string[]; variants: { name: string; price: string }[];
   offers: { qty: string; price: string }[];
+  freeShipping: boolean;
   // صفحة الهبوط (نص: كل سطر عنصر)
   sku: string; cost: string; lowStock: string; featured: boolean; stock: number | null;
   l_reviews: boolean;
@@ -40,7 +41,7 @@ function formToLanding(f: Form): Landing {
   };
 }
 
-const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [], offers: [], sku: "", cost: "", lowStock: "", featured: false, stock: null, ...landingToForm() };
+const empty: Form = { name: "", slug: "", tagline: "", category: categories[0].slug, active: true, price: "", compareAtPrice: "", description: "", images: [], variants: [], offers: [], freeShipping: false, sku: "", cost: "", lowStock: "", featured: false, stock: null, ...landingToForm() };
 
 // نصغرو الصورة فالتيليفون قبل ما نرفعوها (أسرع + أقل من الحد)
 async function shrink(file: File): Promise<Blob> {
@@ -75,6 +76,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         description: p.description.join("\n"), images: p.images,
         variants: p.variants.map((v: Variant) => ({ name: v.name, price: String(v.price) })),
         offers: (p.offers || []).map((o: Offer) => ({ qty: String(o.qty), price: String(o.price) })),
+        freeShipping: !!p.freeShipping,
         sku: p.sku || "", cost: p.cost != null ? String(p.cost) : "", lowStock: p.lowStock != null ? String(p.lowStock) : "",
         featured: !!p.featured, stock: p.stock ?? null,
         ...landingToForm(p.landing, p.category),
@@ -162,6 +164,10 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
           <label className="flex items-center gap-3 rounded-xl bg-soft p-3 font-bold">
             <input type="checkbox" className="size-5" checked={f.l_reviews} onChange={(e) => set("l_reviews", e.target.checked)} />
             💬 يبان قسم «آراء الزبائن» فصفحة المنتج
+          </label>
+          <label className={`flex items-center gap-3 rounded-xl p-3 font-bold ${f.freeShipping ? "bg-ok/10 text-ok ring-1 ring-ok/30" : "bg-soft"}`}>
+            <input type="checkbox" className="size-5" checked={f.freeShipping} onChange={(e) => set("freeShipping", e.target.checked)} />
+            🚚 توصيل مجاني لهاد المنتج <span className="text-xs font-normal text-muted">(للدار وللمكتب، كامل الولايات)</span>
           </label>
         </div>
       </section>

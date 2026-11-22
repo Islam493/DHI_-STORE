@@ -8,6 +8,18 @@ import type { Product } from "@/lib/catalog";
 
 const empty = { product_id: "", name: "", wilaya: "", rating: 5, text: "", image: "", order_id: "" };
 
+// سطر: الاسم | الولاية | النجوم | الرأي  (الولاية والنجوم اختياريين)
+function parseLine(l: string) {
+  const p = l.split("|").map((x) => x.trim());
+  if (p.length < 2) return null;
+  const name = p[0], text = p[p.length - 1];
+  const mid = p.slice(1, -1);
+  const starIdx = mid.findIndex((x) => /^[1-5]$/.test(x) || /^★{1,5}$/.test(x));
+  const rating = starIdx >= 0 ? (/^★/.test(mid[starIdx]) ? mid[starIdx].length : Number(mid[starIdx])) : 5;
+  const wilaya = mid.filter((_, k) => k !== starIdx)[0] || "";
+  return { name, wilaya, rating, text };
+}
+
 export default function Reviews() {
   const [list, setList] = useState<Review[] | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -16,6 +28,14 @@ export default function Reviews() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const shotsRef = useRef<HTMLInputElement>(null);
+  const [bulkTab, setBulkTab] = useState<"text" | "shots">("text");
+  const [bulkProduct, setBulkProduct] = useState("");
+  const [bulkText, setBulkText] = useState("");
+  const [bulkMsg, setBulkMsg] = useState("");
+  const [shotProgress, setShotProgress] = useState("");
+  const parsed = bulkText.split("\n").map((l) => l.trim()).filter(Boolean).map(parseLine);
+  const okLines = parsed.filter(Boolean) as NonNullable<ReturnType<typeof parseLine>>[];
 
   const load = () => api<{ reviews: Review[] }>("/api/admin/reviews").then((d) => setList(d.reviews)).catch((e) => setErr(e.message));
   useEffect(() => { load(); api<{ products: Product[] }>("/api/admin/products").then((d) => setProducts(d.products)).catch(() => {}); }, []);
@@ -34,6 +54,30 @@ export default function Reviews() {
     setBusy(true);
     try { setF({ ...f, image: await uploadFile(files[0]) }); } catch (e) { setErr((e as Error).message); }
     setBusy(false);
+  }
+  async function addBulk() {
+    if (!okLines.length) return;
+    setBusy(true); setBulkMsg("");
+    try {
+      const d = await api<{ added: number }>("/api/admin/reviews", { method: "POST", body: JSON.stringify({ items: okLines.map((x) => ({ ...x, product_id: bulkProduct })) }) });
+      setBulkMsg(`✅ تزادو ${d.added} آراء`); setBulkText(""); load();
+    } catch (e) { setBulkMsg("⚠️ " + (e as Error).message); }
+    setBusy(false);
+  }
+  async function addShots(files: FileList | null) {
+    if (!files?.length) return;
+    setBusy(true); setBulkMsg("");
+    const urls: string[] = [];
+    try {
+      for (const [k, file] of Array.from(files).entries()) {
+        setShotProgress(`📤 ${k + 1} / ${files.length}`);
+        urls.push(await uploadFile(file));
+      }
+      const d = await api<{ added: number }>("/api/admin/reviews", { method: "POST", body: JSON.stringify({ items: urls.map((image) => ({ product_id: bulkProduct, name: "رسالة زبون", text: "", image })) }) });
+      setBulkMsg(`✅ تزادو ${d.added} سكرينات`); load();
+    } catch (e) { setBulkMsg("⚠️ " + (e as Error).message); }
+    setShotProgress(""); setBusy(false);
+    if (shotsRef.current) shotsRef.current.value = "";
   }
   async function toggle(r: Review) {
     await api(`/api/admin/reviews/${r.id}`, { method: "PUT", body: JSON.stringify({ visible: !r.visible }) }).catch((e) => toast(e.message, false));
@@ -56,7 +100,41 @@ export default function Reviews() {
       </p>
 
       <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
-        <h2 className="font-extrabold text-navy">{editId ? "✏️ تعديل الرأي" : "➕ زيد رأي"}</h2>
+        <h2 className="font-extrabold text-navy">📥 زيد بزاف آراء مرة وحدة</h2>
+        <label className="block text-sm font-bold">المنتج
+          <select className={input} value={bulkProduct} onChange={(e) => setBulkProduct(e.target.value)}>
+            <option value="">— المتجر كامل (يبانو فكل المنتجات اللي ما عندهمش آراء) —</option>
+            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+        <div className="flex gap-2 rounded-xl bg-soft p-1 text-sm font-bold">
+          <button type="button" onClick={() => setBulkTab("text")} className={`flex-1 rounded-lg py-2 ${bulkTab === "text" ? "bg-white shadow" : ""}`}>✍️ آراء مكتوبة</button>
+          <button type="button" onClick={() => setBulkTab("shots")} className={`flex-1 rounded-lg py-2 ${bulkTab === "shots" ? "bg-white shadow" : ""}`}>📸 سكرينات الرسائل</button>
+        </div>
+        {bulkTab === "text" ? (
+          <div className="space-y-2">
+            <p className="text-xs text-muted">كل سطر رأي: <b dir="rtl">الاسم | الولاية | النجوم | الرأي</b> — الولاية والنجوم اختياريين (النجوم من 1 حتى 5). مثال:<br /><span className="font-mono">محمد ب. | وهران | 5 | الكاميرا وصلت فيومين وتخدم مليح</span></p>
+            <textarea className={`${input} min-h-36`} value={bulkText} onChange={(e) => setBulkText(e.target.value)} placeholder={"محمد ب. | وهران | 5 | الكاميرا وصلت فيومين وتخدم مليح\nسارة | 4 | الصورة واضحة حتى فالليل"} />
+            {parsed.length > 0 && <p className="text-xs font-bold">{okLines.length} رأي جاهز{parsed.length > okLines.length && <span className="text-sale"> · {parsed.length - okLines.length} سطر ناقص (لازم الاسم | الرأي على الأقل)</span>}</p>}
+            {okLines.length > 0 && (
+              <ul className="max-h-48 space-y-1 overflow-y-auto rounded-xl bg-soft p-2 text-xs">
+                {okLines.map((x, k) => <li key={k}><b>{x.name}</b>{x.wilaya && ` · ${x.wilaya}`} · <span className="text-amber-500" dir="ltr">{"★".repeat(x.rating)}</span> — {x.text}</li>)}
+              </ul>
+            )}
+            <button onClick={addBulk} disabled={busy || !okLines.length} className="w-full rounded-xl bg-brand py-3 font-extrabold text-white disabled:opacity-40">➕ زيد {okLines.length || ""} آراء</button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted">اختار سكرينات رسائل الزبائن (واتساب، فيسبوك، إنستغرام...) — تقدر تختار بزاف مرة وحدة. يبانو فمعرض «📸 من رسائل زبائننا»، وما يدخلوش فحساب النجوم. خبّي أرقام الهاتف قبل.</p>
+            <button type="button" onClick={() => shotsRef.current?.click()} disabled={busy} className="w-full rounded-xl border-2 border-dashed border-brand/40 bg-brand/5 py-6 font-extrabold text-brand disabled:opacity-50">{shotProgress || "📸 اختار السكرينات"}</button>
+            <input ref={shotsRef} type="file" accept="image/*" multiple hidden onChange={(e) => addShots(e.target.files)} />
+          </div>
+        )}
+        {bulkMsg && <p className="rounded-xl bg-soft p-2 text-sm font-bold">{bulkMsg}</p>}
+      </section>
+
+      <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <h2 className="font-extrabold text-navy">{editId ? "✏️ تعديل الرأي" : "➕ زيد رأي واحد"}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-bold">المنتج
             <select className={input} value={f.product_id} onChange={(e) => setF({ ...f, product_id: e.target.value })}>

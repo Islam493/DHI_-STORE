@@ -28,6 +28,7 @@ export type Landing = {
   story?: string; // قصة قصيرة من القلب ("تخيّل...")
   promise?: string; // الوعد فالأخير
   offers?: Offer[];
+  freeShipping?: boolean; // توصيل مجاني لهاد المنتج
   hideReviews?: boolean; // قسم آراء الزبائن (فارغ = مخبي للهواتف، ظاهر للباقي)
 };
 const landings = landingSeed as Record<string, Landing>;
@@ -52,6 +53,7 @@ export type Product = {
   cost?: number | null; // سعر الشراء (للمدير برك)
   featured?: boolean;
   offers?: Offer[];
+  freeShipping?: boolean; // التوصيل مجاني (للدار وللمكتب)
 };
 
 export type ProductRow = {
@@ -70,7 +72,7 @@ export const toRow = (p: Product): ProductRow => ({
   id: p.id, slug: p.slug, name: p.name, tagline: p.tagline || null, category: p.category, active: p.active,
   price: p.price, compare_at_price: p.compareAtPrice, variants: p.variants || [], images: p.images || [],
   description: (p.description || []).join("\n"), sort: p.sort ?? 0,
-  ...(p.landing || p.offers?.length ? { landing: { ...(p.landing ?? emptyLanding()), offers: p.offers ?? [] } } : {}),
+  ...(p.landing || p.offers?.length || p.freeShipping ? { landing: { ...(p.landing ?? emptyLanding()), offers: p.offers ?? [], freeShipping: !!p.freeShipping } } : {}),
   ...(p.stock !== undefined ? { stock: p.stock } : {}),
   ...(p.lowStock !== undefined ? { low_stock: p.lowStock } : {}),
   ...(p.sku !== undefined ? { sku: p.sku } : {}),
@@ -100,6 +102,7 @@ export const fromRow = (r: ProductRow): Product => ({
   cost: typeof r.cost === "number" ? r.cost : null,
   featured: !!r.featured,
   offers: cleanOffers(r.landing?.offers),
+  freeShipping: r.landing?.freeShipping === true,
 });
 
 // المتجر ما يشوفش سعر الشراء

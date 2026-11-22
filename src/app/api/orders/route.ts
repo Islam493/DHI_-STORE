@@ -65,7 +65,9 @@ export async function POST(req: Request) {
     else { unitPrice = v.price; variant = v.name; }
   }
 
-  const fee = wilaya ? (method === "desk" ? wilaya.desk : wilaya.home) : null;
+  const baseFee = wilaya ? (method === "desk" ? wilaya.desk : wilaya.home) : null;
+  // توصيل مجاني لهاد المنتج: نفس الطرق (المكتب غير وين كاين) بصح بلا ثمن
+  const fee = baseFee === null ? null : product.freeShipping ? 0 : baseFee;
   if (wilaya && fee === null) errors.method = "ما كانش مكتب فهاد الولاية، اختار التوصيل للدار";
 
   // العروض: عدد القطع بسعر كامل (غير للمنتجات بلا أنواع)
@@ -103,7 +105,7 @@ export async function POST(req: Request) {
     unit_price: unitPrice,
     shipping_fee: fee!,
     total: subtotal + fee!,
-    note: [offer ? `🎁 عرض: ${offer.qty} قطع بـ ${formatPrice(offer.price)}` : "", note].filter(Boolean).join(" — "),
+    note: [offer ? `🎁 عرض: ${offer.qty} قطع بـ ${formatPrice(offer.price)}` : "", product.freeShipping ? "🚚 توصيل مجاني" : "", note].filter(Boolean).join(" — "),
     ip,
   };
 
