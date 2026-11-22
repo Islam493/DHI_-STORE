@@ -13,7 +13,8 @@ for (const p of Object.values(P.packs)) p.videos.forEach((v, k) => p.images[k] &
 export function packImages(slug: string, list: string[]) {
   const pack = P.packs[slug];
   const orig = P.restore[slug] || [];
-  const clean = list.filter((u) => !u.startsWith("/designs/"));
+  // /designs/ و /ads/ هوما تصاميمنا (يتسيرو وحدهم)، حتى لو تحفظو فاللوحة بأسماء قدام
+  const clean = list.filter((u) => !u.startsWith("/designs/") && !u.startsWith("/ads/"));
   const untouched = !clean.length || clean.every((u) => orig.includes(u) || u.startsWith("/products/" + slug + "-"));
   if (pack && untouched) return [...pack.images];
   return clean.length ? clean : orig;
