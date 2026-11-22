@@ -46,30 +46,48 @@
   "packs": {
     "bulb-camera-360": {
       "images": [
-        "/ads/bulb-camera-360/ad1.webp"
+        "/ads/bulb-camera-360/1s.webp",
+        "/ads/bulb-camera-360/2s.webp",
+        "/ads/bulb-camera-360/3s.webp",
+        "/ads/bulb-camera-360/4s.webp"
       ],
       "videos": [
-        "/ads/bulb-camera-360/ad1.mp4"
+        "/ads/bulb-camera-360/1s.mp4",
+        "/ads/bulb-camera-360/2s.mp4",
+        "/ads/bulb-camera-360/3s.mp4",
+        "/ads/bulb-camera-360/4s.mp4"
       ],
-      "photo": "/ads/bulb-camera-360/photo-r.webp"
+      "photo": "/ads/bulb-camera-360/photo-s.webp"
     },
     "dual-lens-wifi-camera": {
       "images": [
-        "/ads/dual-lens-wifi-camera/ad1.webp"
+        "/ads/dual-lens-wifi-camera/1s.webp",
+        "/ads/dual-lens-wifi-camera/2s.webp",
+        "/ads/dual-lens-wifi-camera/3s.webp",
+        "/ads/dual-lens-wifi-camera/4s.webp"
       ],
       "videos": [
-        "/ads/dual-lens-wifi-camera/ad1.mp4"
+        "/ads/dual-lens-wifi-camera/1s.mp4",
+        "/ads/dual-lens-wifi-camera/2s.mp4",
+        "/ads/dual-lens-wifi-camera/3s.mp4",
+        "/ads/dual-lens-wifi-camera/4s.mp4"
       ],
-      "photo": "/ads/dual-lens-wifi-camera/photo-r.webp"
+      "photo": "/ads/dual-lens-wifi-camera/photo-s.webp"
     },
     "dual-lens-wifi-camera-2": {
       "images": [
-        "/ads/dual-lens-wifi-camera-2/ad1.webp"
+        "/ads/dual-lens-wifi-camera-2/1s.webp",
+        "/ads/dual-lens-wifi-camera-2/2s.webp",
+        "/ads/dual-lens-wifi-camera-2/3s.webp",
+        "/ads/dual-lens-wifi-camera-2/4s.webp"
       ],
       "videos": [
-        "/ads/dual-lens-wifi-camera-2/ad1.mp4"
+        "/ads/dual-lens-wifi-camera-2/1s.mp4",
+        "/ads/dual-lens-wifi-camera-2/2s.mp4",
+        "/ads/dual-lens-wifi-camera-2/3s.mp4",
+        "/ads/dual-lens-wifi-camera-2/4s.mp4"
       ],
-      "photo": "/ads/dual-lens-wifi-camera-2/photo-r.webp"
+      "photo": "/ads/dual-lens-wifi-camera-2/photo-s.webp"
     },
     "dummy-solar-camera": {
       "images": [
@@ -109,14 +127,18 @@
     },
     "okam-pro-4g-solar-dual": {
       "images": [
-        "/ads/okam-pro-4g-solar-dual/ad1.webp",
-        "/ads/okam-pro-4g-solar-dual/ad2.webp"
+        "/ads/okam-pro-4g-solar-dual/1s.webp",
+        "/ads/okam-pro-4g-solar-dual/2s.webp",
+        "/ads/okam-pro-4g-solar-dual/3s.webp",
+        "/ads/okam-pro-4g-solar-dual/4s.webp"
       ],
       "videos": [
-        "/ads/okam-pro-4g-solar-dual/ad1.mp4",
-        "/ads/okam-pro-4g-solar-dual/ad2.mp4"
+        "/ads/okam-pro-4g-solar-dual/1s.mp4",
+        "/ads/okam-pro-4g-solar-dual/2s.mp4",
+        "/ads/okam-pro-4g-solar-dual/3s.mp4",
+        "/ads/okam-pro-4g-solar-dual/4s.mp4"
       ],
-      "photo": "/ads/okam-pro-4g-solar-dual/photo-r.webp"
+      "photo": "/ads/okam-pro-4g-solar-dual/photo-s.webp"
     },
     "smart-security-camera": {
       "images": [
@@ -147,12 +169,18 @@
     },
     "solar-4g-camera": {
       "images": [
-        "/ads/solar-4g-camera/ad1.webp"
+        "/ads/solar-4g-camera/1s.webp",
+        "/ads/solar-4g-camera/2s.webp",
+        "/ads/solar-4g-camera/3s.webp",
+        "/ads/solar-4g-camera/4s.webp"
       ],
       "videos": [
-        "/ads/solar-4g-camera/ad1.mp4"
+        "/ads/solar-4g-camera/1s.mp4",
+        "/ads/solar-4g-camera/2s.mp4",
+        "/ads/solar-4g-camera/3s.mp4",
+        "/ads/solar-4g-camera/4s.mp4"
       ],
-      "photo": "/ads/solar-4g-camera/photo-r.webp"
+      "photo": "/ads/solar-4g-camera/photo-s.webp"
     }
   }
 }
