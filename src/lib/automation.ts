@@ -69,7 +69,7 @@ export async function onOrderCreated(o: Order) {
   const s = (await getSettings()).automation;
   if (!s.confirm) return;
   const id = await sendTemplate(o.phone, "dhi_confirm", [first(o), productLabel(o), formatPrice(o.total), place(o)], {
-    orderId: o.id, payloads: [`CONFIRM:${o.id}`, `CANCEL:${o.id}`],
+    orderId: o.id, payloads: [`CONFIRM:${o.id}`, `CANCEL:${o.id}`, `HELP:${o.id}`],
   });
   if (id) await setState(o.id, {}, { confirm_at: now() });
 }
@@ -94,6 +94,16 @@ export async function handleIncoming(m: Incoming) {
 
   if (action === "TEST") {
     await sendText(phone, "✅ التجربة نجحت! الأزرار يخدمو والرسائل يوصلو للمتجر.", null, "auto_reply").catch(() => {});
+    return;
+  }
+  if (o && action === "HELP") {
+    await sendText(phone, "أكيد 🙏 اكتبلنا سؤالك هنا، وواحد من الفريق يجاوبك فأقرب وقت.", o.id, "auto_reply").catch(() => {});
+    await notifyStaff(`❓ عندو سؤال قبل ما يأكد: #${o.id} — ${o.customer_name} (${o.phone}) — ${o.product_name}\nجاوبو من اللوحة: ${store.url}/admin/orders/${o.id}`);
+    return;
+  }
+  if (o && action === "CALLME") {
+    await sendText(phone, "مليح 👍 نعيطولك فأقرب وقت باش نبرمجو التوصيل.", o.id, "auto_reply").catch(() => {});
+    await notifyStaff(`📞 حاب تعيطولو (الليفرور ما لقاهش): #${o.id} — ${o.customer_name} (${o.phone})`);
     return;
   }
   if (o && action === "CONFIRM") {
@@ -169,7 +179,7 @@ export async function tick(limit = 40): Promise<TickResult> {
       if (!f?.confirm_at || f.replied_at || f.no_answer_at) continue;
       if (!f.reminder_at && ago(f.confirm_at) > s.reminderHours * 3600_000) {
         n++;
-        const id = await sendTemplate(o.phone, "dhi_confirm_reminder", [first(o), productLabel(o)], { orderId: o.id, payloads: [`CONFIRM:${o.id}`, `CANCEL:${o.id}`] });
+        const id = await sendTemplate(o.phone, "dhi_confirm_reminder", [first(o), productLabel(o)], { orderId: o.id, payloads: [`CONFIRM:${o.id}`, `CANCEL:${o.id}`, `HELP:${o.id}`] });
         if (id) { r.reminders++; await setState(o.id, {}, { reminder_at: now() }); }
       } else if (f.reminder_at && ago(f.confirm_at) > s.noAnswerHours * 3600_000) {
         n++;
@@ -207,7 +217,7 @@ export async function tick(limit = 40): Promise<TickResult> {
           const id = await sendTemplate(o.phone, "dhi_out_for_delivery", [first(o), productLabel(o), formatPrice(o.total)], { orderId: o.id });
           if (id) { r.outForDelivery++; await setState(o.id, {}, { ofd_msg: now() }); }
         } else if (t.state === "failed" && f.missed_msg !== t.label) {
-          if (msgs) await sendTemplate(o.phone, "dhi_missed", [first(o), productLabel(o)], { orderId: o.id });
+          if (msgs) await sendTemplate(o.phone, "dhi_missed", [first(o), productLabel(o)], { orderId: o.id, payloads: [`CALLME:${o.id}`] });
           await setState(o.id, {}, { missed_msg: t.label });
           await notifyStaff(`📵 الليفرور ما لقاش الزبون: #${o.id} — ${o.customer_name} (${o.phone})\nWorld Express: ${t.label}\nعيّطلو قبل ما ترجع.`);
           r.missed++;

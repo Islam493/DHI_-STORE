@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { audit } from "@/lib/audit";
 import { dbSelect } from "@/lib/db";
 import { defaultAutomation, getSettings, saveSettings, type Automation } from "@/lib/settings";
-import { TEMPLATES, VERIFY_TOKEN, sendTemplate, wa } from "@/lib/whatsapp";
+import { TEMPLATES, TEMPLATE_FOOTER, VERIFY_TOKEN, sendTemplate, wa } from "@/lib/whatsapp";
 import { tick } from "@/lib/automation";
 import { carrier, trackingStatus } from "@/lib/ecotrack";
 import { store } from "@/lib/config";
@@ -29,6 +29,7 @@ export async function GET() {
       cronUrl: `${store.url}/api/cron/automation?key=`,
       automation: s.automation,
       templates: Object.entries(TEMPLATES).map(([name, t]) => ({ name, text: t.text, buttons: t.buttons, vars: t.vars })),
+      footer: TEMPLATE_FOOTER,
       messages,
     });
   } catch (e) { return fail(e); }
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
       const phone = String(b.phone || "").replace(/[\s.-]/g, "").replace(/^(\+213|00213)/, "0");
       if (!/^0[567]\d{8}$/.test(phone)) return NextResponse.json({ error: "رقم الهاتف غالط" }, { status: 400 });
       if (!wa.enabled) return NextResponse.json({ error: "الواتساب مازال ما تربطش: زيد المفاتيح فـ Vercel" }, { status: 409 });
-      const id = await sendTemplate(phone, "dhi_confirm", ["تجربة", "كاميرا (تجربة)", "0 دج", "الجزائر (الدار)"], { payloads: ["TEST:0", "TEST:0"] });
+      const id = await sendTemplate(phone, "dhi_confirm", ["تجربة", "كاميرا (تجربة)", "0 دج", "الجزائر (الدار)"], { payloads: ["TEST:0", "TEST:0", "TEST:0"] });
       if (!id) {
         const [last] = await dbSelect<{ error?: string }>("wa_messages", { eq: { phone }, order: ["at", "desc"], limit: 1 }, { fresh: true }).catch(() => []);
         return NextResponse.json({ error: `ما خرجتش: ${last?.error || "شوف القالب dhi_confirm واش تقبل فـ WhatsApp Manager"}` }, { status: 400 });

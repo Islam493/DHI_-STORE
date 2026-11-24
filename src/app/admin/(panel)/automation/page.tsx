@@ -7,7 +7,7 @@ type Auto = { confirm: boolean; reminderHours: number; noAnswerHours: number; au
 type Msg = { id: number; at: string; order_id: string | null; phone: string; dir: "in" | "out"; kind: string; body: string; status: string; error?: string | null };
 type Data = {
   ready: boolean; wa: { enabled: boolean; webhook: boolean; verify: boolean }; carrier: boolean; cron: boolean; telegram: boolean;
-  webhookUrl: string; cronUrl: string; automation: Auto; templates: { name: string; text: string; buttons: string[]; vars: number }[]; messages: Msg[];
+  webhookUrl: string; cronUrl: string; footer: string; automation: Auto; templates: { name: string; text: string; buttons: string[]; vars: number }[]; messages: Msg[];
 };
 
 const kinds: Record<string, string> = {
@@ -104,7 +104,7 @@ export default function Automation() {
 
       <section className={box}>
         <h2 className="font-extrabold text-navy">📝 القوالب (سجّلهم فـ WhatsApp Manager)</h2>
-        <p className="mt-1 text-xs text-muted">WhatsApp Manager ← Message templates ← Create template ← الفئة <b>Utility</b> ← اللغة <b>Arabic</b>. الاسم لازم يكون نفسو بالضبط، والأزرار <b>Quick reply</b>.</p>
+        <p className="mt-1 text-xs text-muted">WhatsApp Manager ← Message templates ← Create template ← الفئة <b>Utility</b> ← اللغة <b>Arabic</b>. الاسم لازم يكون نفسو بالضبط، والأزرار <b>Quick reply</b> بنفس الترتيب، والـ <b>Footer</b> تحت كل رسالة.</p>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           {d.templates.map((t) => (
             <div key={t.name} className="rounded-xl bg-soft p-3 ring-1 ring-line">
@@ -113,6 +113,7 @@ export default function Automation() {
                 <span className="text-[11px] text-muted">{kinds[t.name]} · {t.vars} متغيرات</span>
               </div>
               <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-6 text-navy">{t.text}</pre>
+              <p className="mt-1 text-[11px] text-muted">Footer: {d.footer}</p>
               {t.buttons.length > 0 && <p className="mt-2 flex flex-wrap gap-1.5">{t.buttons.map((b) => <span key={b} className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-brand ring-1 ring-line">{b}</span>)}</p>}
               <button onClick={() => copy(t.text)} className="mt-2 text-xs font-bold text-brand">📋 نسخ النص</button>
             </div>
