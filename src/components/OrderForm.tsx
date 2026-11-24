@@ -234,7 +234,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
             <div><div className={box("name")}>{icon(I.user)}<input name="name" autoComplete="name" placeholder="الاسم واللقب" aria-label="الاسم واللقب" className={input} required /></div>{err("name")}</div>
             <div><div className={box("phone")}>{icon(I.phone)}<input name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="رقم الهاتف (05 / 06 / 07)" aria-label="رقم الهاتف" className={input} required /></div>{err("phone")}</div>
           </div>
-          <p className="mt-2 text-xs text-muted">🔒 نستعملو رقمك غير باش نتصلو بيك على هاد الطلبية.</p>
+          <p className="mt-2 text-xs text-muted">🔒 نستعملو رقمك غير باش نتصلو بيك على هاد الطلبية، ونبعثولك التأكيد والتتبع على الواتساب 💬</p>
         </div>
 
         <div>
