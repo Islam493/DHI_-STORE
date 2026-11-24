@@ -76,3 +76,53 @@ export async function carrierFees(cached = false): Promise<{ fees: Record<number
   }
   return { fees, keys: list[0] && typeof list[0] === "object" ? Object.keys(list[0]) : [] };
 }
+
+// ---------- تتبع الطرد (حالة الطلبية عند شركة التوصيل) ----------
+export type TrackState = "out_for_delivery" | "delivered" | "failed" | "returned" | "in_transit" | "unknown";
+const plain = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// الكلمات اللي تستعملهم شركات التوصيل (فرنسية/عربية/إنجليزية)
+export function classifyStatus(label: string): TrackState {
+  const t = plain(label);
+  if (!t.trim()) return "unknown";
+  if (/retour|return|مرتجع|ارجاع|إرجاع/.test(t)) return "returned";
+  if (/tentative|echec|injoignable|ne repond|absent|report|refus|annul|مؤجل|لم يرد|رفض|فشل/.test(t)) return "failed";
+  if (/en (cours de )?livraison|out for delivery|livreur|مع الموزع|خرج.{0,6}توصيل|قيد التوصيل/.test(t)) return "out_for_delivery";
+  if (/\blivree?s?\b|delivered|encaiss|تم التسليم|تم التوصيل|سلمت|مستلم/.test(t)) return "delivered";
+  return "in_transit";
+}
+
+const STATUS_KEYS = ["status", "statut", "status_name", "libelle", "label", "situation", "event", "etat", "state", "description", "activity", "title"];
+const DATE_KEYS = ["date", "created_at", "updated_at", "time", "datetime", "date_status", "at"];
+
+// الجواب ماشي موثق: نلقاو آخر حدث فيه حالة (نقراو بمرونة)
+export function latestStatus(data: unknown): string {
+  const events: { label: string; at: number; i: number }[] = [];
+  let i = 0;
+  const walk = (v: unknown, depth: number) => {
+    if (depth > 6 || v == null) return;
+    if (Array.isArray(v)) { v.forEach((x) => walk(x, depth + 1)); return; }
+    if (typeof v !== "object") return;
+    const o = v as Record<string, unknown>;
+    const k = STATUS_KEYS.find((key) => typeof o[key] === "string" && (o[key] as string).trim());
+    if (k) {
+      const d = DATE_KEYS.map((key) => o[key]).find((x) => typeof x === "string" || typeof x === "number");
+      const at = d ? new Date(typeof d === "number" && d < 1e12 ? d * 1000 : (d as string)).getTime() : NaN;
+      events.push({ label: String(o[k]).trim(), at: Number.isFinite(at) ? at : NaN, i: i++ });
+    }
+    for (const x of Object.values(o)) if (typeof x === "object") walk(x, depth + 1);
+  };
+  walk(data, 0);
+  if (!events.length) return "";
+  const dated = events.filter((e) => Number.isFinite(e.at));
+  if (dated.length) return dated.sort((a, b) => b.at - a.at || b.i - a.i)[0].label;
+  return events[events.length - 1].label;
+}
+
+export async function trackingStatus(tracking: string): Promise<{ label: string; state: TrackState; raw: unknown }> {
+  const res = await call(`get/tracking/info?tracking=${encodeURIComponent(tracking)}`);
+  const raw = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(`World Express ${res.status}`);
+  const label = latestStatus(raw);
+  return { label, state: classifyStatus(label), raw };
+}

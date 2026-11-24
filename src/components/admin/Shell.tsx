@@ -16,6 +16,7 @@ const nav: Item[] = [
   { href: "/admin/inventory", label: "المخزون", icon: "🏬", perm: "products.view" },
   { href: "/admin/reviews", label: "آراء الزبائن", icon: "⭐", perm: "reviews.edit" },
   { href: "/admin/delivery", label: "التوصيل", icon: "🚚", perm: "orders.ship" },
+  { href: "/admin/automation", label: "الأتمتة (واتساب)", icon: "🤖", perm: "settings.edit" },
   { href: "/admin/analytics", label: "الإحصائيات", icon: "📈", perm: "stats.view" },
   { href: "/admin/profit", label: "الأرباح", icon: "💹", perm: "stats.view" },
   { href: "/admin/users", label: "الفريق", icon: "🧑‍💼", perm: "users.manage" },

@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { placeOrder } from "@/lib/checkout";
 import { markConverted } from "@/lib/abandoned";
+import { onOrderCreated } from "@/lib/automation";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
 const hits = new Map<string, number[]>();
@@ -44,5 +45,7 @@ export async function POST(req: Request) {
   }
   // الطلبية المتروكة (إذا كانت) ولات طلبية حقيقية
   await markConverted(r.order, clean(body.draft, 40), true).catch(() => {});
+  // رسالة التأكيد بالواتساب (بعد ما نجاوبو الزبون، باش ما يستناش)
+  after(() => onOrderCreated(r.order).catch((e) => console.error("wa confirm:", e)));
   return NextResponse.json({ ok: true, id: r.order.id, total: r.order.total });
 }

@@ -56,8 +56,12 @@ export type Settings = {
   content: StoreContent;
   // حساب الربح: سعر التوصيل اللي تخلصو لـ World Express + مصاريف المرجوع + عمولة
   profit: { carrierFees: Record<string, { home: number | null; desk: number | null }>; returnFee: number; codPercent: number };
+  // الأتمتة: تأكيد بالواتساب، تذكير، إرسال لشركة التوصيل، تتبع الطلبية حتى توصل
+  automation: Automation;
   seeded?: boolean;
 };
+export type Automation = { confirm: boolean; reminderHours: number; noAnswerHours: number; autoShip: boolean; tracking: boolean; messages: boolean };
+export const defaultAutomation: Automation = { confirm: true, reminderHours: 3, noAnswerHours: 24, autoShip: false, tracking: true, messages: true };
 
 const defaults = (): Settings => ({
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP || OFFICIAL.phone,
@@ -73,6 +77,7 @@ const defaults = (): Settings => ({
   blocked: { phones: [], ips: [] },
   content: defaultContent,
   profit: { carrierFees: {}, returnFee: 0, codPercent: 0 },
+  automation: defaultAutomation,
 });
 
 export async function getSettings(fresh = false): Promise<Settings> {
@@ -91,6 +96,7 @@ export async function getSettings(fresh = false): Promise<Settings> {
       },
       blocked: { phones: d.blocked?.phones || [], ips: d.blocked?.ips || [] },
       profit: { carrierFees: d.profit?.carrierFees || {}, returnFee: Number(d.profit?.returnFee) || 0, codPercent: Number(d.profit?.codPercent) || 0 },
+      automation: { ...defaultAutomation, ...(d.automation || {}) },
       content: {
         ...defaultContent, ...(d.content || {}),
         socials: {

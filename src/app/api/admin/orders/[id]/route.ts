@@ -7,6 +7,8 @@ import { getAllProducts } from "@/lib/catalog";
 import { getSettings, getWilayas } from "@/lib/settings";
 import { actor, fail, guard } from "@/lib/admin-api";
 import { carrier } from "@/lib/ecotrack";
+import { getState } from "@/lib/automation";
+import { wa } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -22,16 +24,19 @@ export async function GET(_req: Request, { params }: Ctx) {
   try {
     const o = await load(id);
     if (!o) return NextResponse.json({ error: "الطلبية ما كانتش" }, { status: 404 });
-    const [same, products, s] = await Promise.all([
+    const [same, products, s, messages, auto] = await Promise.all([
       dbSelect<Order>("orders", { eq: { phone: o.phone }, order: ["created_at", "desc"], limit: 20, select: "id,status,created_at,product_name,total" }, { fresh: true }),
       getAllProducts(true),
       getSettings(true),
+      dbSelect("wa_messages", { eq: { order_id: o.id }, order: ["at", "asc"], limit: 100 }, { fresh: true }).catch(() => []),
+      getState(o.id),
     ]);
     return NextResponse.json({
       order: o,
       image: products.find((p) => p.id === o.product_id)?.images[0] || null,
       others: same.filter((x) => x.id !== o.id),
       carrier: carrier.enabled,
+      messages, carrierStatus: auto.carrier_status || null, checkedAt: auto.checked_at || null, wa: wa.enabled,
       blocked: { phone: s.blocked.phones.includes(o.phone), ip: !!o.ip && s.blocked.ips.includes(o.ip) },
     });
   } catch (e) { return fail(e); }

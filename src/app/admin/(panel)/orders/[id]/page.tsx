@@ -9,7 +9,14 @@ import { confirmAction, toast, useCan } from "@/components/admin/ui";
 import { statuses, type Order, type Status } from "@/lib/order-types";
 import type { Wilaya } from "@/lib/wilayas";
 
-type Data = { carrier: boolean; order: Order; image: string | null; others: Pick<Order, "id" | "status" | "created_at" | "product_name" | "total">[]; blocked: { phone: boolean; ip: boolean } };
+type WaMsg = { id: number; at: string; dir: "in" | "out"; kind: string; body: string; status: string; error?: string | null };
+type Data = { carrier: boolean; order: Order; image: string | null; others: Pick<Order, "id" | "status" | "created_at" | "product_name" | "total">[]; blocked: { phone: boolean; ip: boolean };
+  messages?: WaMsg[]; carrierStatus?: string | null; checkedAt?: string | null; wa?: boolean };
+const waKinds: Record<string, string> = {
+  dhi_confirm: "طلب التأكيد", dhi_confirm_reminder: "تذكير", dhi_shipped: "خرجت", dhi_out_for_delivery: "الليفرور جاي", dhi_missed: "ما لقاهش الليفرور",
+  dhi_delivered: "وصلت", auto_reply: "رد أوتوماتيك", staff: "رد الفريق", button: "ضغط زر", text: "رسالة الزبون",
+};
+const waTick: Record<string, string> = { sent: "✓", delivered: "✓✓", read: "✓✓ قراها", failed: "⚠️ ما خرجتش", received: "" };
 
 const fullDate = (iso: string) => new Date(iso).toLocaleString("fr-DZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -25,6 +32,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   const [ship, setShip] = useState(false);
   const [busy, setBusy] = useState(false);
   const [inote, setInote] = useState<string | null>(null);
+  const [reply, setReply] = useState("");
   const can = useCan();
 
   const load = () => api<Data>(`/api/admin/orders/${id}`).then((r) => { setD(r); setCarrier(r.carrier); }).catch((e) => setErr(e.message));
@@ -195,11 +203,43 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             <a href={`https://suivi.ecotrack.dz/suivi/${o.tracking}`} target="_blank" rel="noopener" className="font-extrabold text-violet-700 underline" dir="ltr">{o.tracking}</a>
             <a href={`/api/admin/shipping/label?tracking=${o.tracking}`} target="_blank" className="rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-bold text-white">🖨️ البوليصة</a>
             {o.shipped_at && <span className="text-xs text-muted">· تبعثت {timeAgo(o.shipped_at)}</span>}
+            {d.carrierStatus && <span className="w-full rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900">📍 عند World Express: <b>{d.carrierStatus}</b>{d.checkedAt && <span className="text-muted"> · {timeAgo(d.checkedAt)}</span>}</span>}
           </div>
         ) : !carrier ? <p className="text-sm text-muted">World Express مازال ما تربطتش.</p>
           : ship ? <ShipPanel o={o} onDone={() => { setShip(false); load(); }} onCancel={() => setShip(false)} />
           : <button onClick={() => setShip(true)} className="w-full rounded-xl bg-violet-700 py-3 text-sm font-bold text-white">🚚 ابعث لـ World Express</button>}
       </section>
+
+      {(d.wa || !!d.messages?.length) && (
+        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+          <h2 className="mb-3 font-extrabold text-navy">💬 واتساب</h2>
+          {!d.messages?.length ? <p className="text-sm text-muted">مازال ما خرجت حتى رسالة لهاد الطلبية.</p> : (
+            <ul className="space-y-2">
+              {d.messages.map((m) => (
+                <li key={m.id} className={`flex ${m.dir === "in" ? "justify-start" : "justify-end"}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.dir === "in" ? "bg-soft text-navy" : "bg-wa/10 text-navy"}`}>
+                    <p className="mb-0.5 text-[11px] font-bold text-muted">{m.dir === "in" ? "👤 الزبون" : "🏪 المتجر"} · {waKinds[m.kind] || m.kind}</p>
+                    <p className="whitespace-pre-line">{m.body}</p>
+                    <p className="mt-1 text-left text-[10px] text-muted">{timeAgo(m.at)} {waTick[m.status] ?? m.status}</p>
+                    {m.error && <p className="text-[11px] font-semibold text-sale">⚠️ {m.error}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {d.wa && can("orders.edit") && (
+            <form className="mt-3 flex gap-2" onSubmit={async (e) => {
+              e.preventDefault(); if (!reply.trim()) return; setBusy(true);
+              try { await api(`/api/admin/orders/${id}/message`, { method: "POST", body: JSON.stringify({ text: reply }) }); setReply(""); toast("خرجت ✅"); load(); }
+              catch (err) { toast((err as Error).message, false); }
+              setBusy(false);
+            }}>
+              <input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="اكتب رد للزبون…" className="min-w-0 flex-1 rounded-xl border border-line px-3 py-2.5 text-sm outline-none focus:border-brand" />
+              <button disabled={busy || !reply.trim()} className="rounded-xl bg-wa px-4 text-sm font-bold text-white disabled:opacity-50">ابعث</button>
+            </form>
+          )}
+        </section>
+      )}
 
       <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
         <h2 className="mb-3 font-extrabold text-navy">🕓 تاريخ حالة الطلب</h2>

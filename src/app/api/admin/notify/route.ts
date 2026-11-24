@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { dbSelect } from "@/lib/db";
 import { orderCounts } from "@/lib/stats";
 import { openCount } from "@/lib/abandoned";
+import { maybeTick } from "@/lib/automation";
 import { fail, guard } from "@/lib/admin-api";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export async function GET() {
   const g = await guard("orders.view"); if (g) return g;
   try {
     const [counts, abandoned] = await Promise.all([orderCounts(), openCount()]);
+    after(maybeTick); // اللوحة محلولة: نخدمو التذكير والتتبع
     let lowStock: { id: string; name: string; stock: number }[] = [];
     try {
       const rows = await dbSelect<{ id: string; name: string; stock: number; low_stock: number | null; active: boolean }>(

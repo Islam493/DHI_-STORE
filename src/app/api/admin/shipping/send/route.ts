@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { audit } from "@/lib/audit";
 import { dbSelect } from "@/lib/db";
-import { updateOrder } from "@/lib/orders";
-import { createParcel } from "@/lib/ecotrack";
+import { shipOrder } from "@/lib/shipping";
+import { onShipped } from "@/lib/automation";
 import type { Order } from "@/lib/order-types";
 import { actor, fail, guard } from "@/lib/admin-api";
 
@@ -19,23 +19,10 @@ export async function POST(req: Request) {
     if (!commune) return NextResponse.json({ error: "اختار البلدية" }, { status: 400 });
     const montant = Math.round(Number(b.montant));
     if (!(montant >= 0)) return NextResponse.json({ error: "المبلغ غالط" }, { status: 400 });
-    const desk = b.stop_desk === 1 || b.stop_desk === true;
-    const tracking = await createParcel({
-      reference: o.id,
-      nom_client: o.customer_name.slice(0, 255),
-      telephone: o.phone.replace(/\D/g, ""),
-      adresse: (desk ? `Stop desk — ${commune}` : o.address || commune).slice(0, 255),
-      commune,
-      code_wilaya: o.wilaya_code,
-      montant,
-      remarque: String(b.remarque ?? o.note ?? "").slice(0, 255),
-      produit: `${o.product_name}${o.variant ? ` (${o.variant})` : ""} x${o.quantity}`.slice(0, 255),
-      stop_desk: desk ? 1 : 0,
-      type: 1,
-    });
-    const shipped_at = new Date().toISOString();
     const by = await actor();
-    await updateOrder(o, { tracking, shipped_at, status: "shipped" }, by);
+    const r = await shipOrder(o, { commune, montant, stop_desk: b.stop_desk === 1 || b.stop_desk === true, remarque: String(b.remarque ?? o.note ?? "") }, by);
+    const { tracking, shipped_at } = r;
+    after(() => onShipped(r.order));
     await audit(by, "order.ship", o.id, { tracking });
     return NextResponse.json({ ok: true, tracking, shipped_at });
   } catch (e) { return fail(e); }
