@@ -36,6 +36,16 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   if (!d) return <p className="p-8 text-center text-muted">جاري التحميل...</p>;
   const o = d.order;
   const wa = `https://wa.me/${o.phone.replace(/^0/, "213")}?text=${encodeURIComponent(`السلام عليكم ${o.customer_name}، معاك DHI Electronics بخصوص طلبيتك (${o.product_name}) — المجموع ${fmt(o.total)}. نأكدو الطلبية؟`)}`;
+  // كي تخرج الطلبية: نفكرو الزبون يخلي تليفونو مفتوح (أكبر سبب تاع الروتور: ما يجاوبش الليفرور)
+  const waShip = `https://wa.me/${o.phone.replace(/^0/, "213")}?text=${encodeURIComponent([
+    `السلام عليكم ${o.customer_name} 👋`,
+    `طلبيتك (${o.product_name}) خرجت مع شركة التوصيل 🚚${o.tracking ? `\nرقم التتبع: ${o.tracking}` : ""}`,
+    `الليفرور يعيطلك قريب — خلّي تليفونك مفتوح وحضّر ${fmt(o.total)} 🙏`,
+    "إذا كاين أي مشكل عيّطلنا قبل ما ترجعها. شكراً على ثقتك — DHI Electronics",
+  ].join("\n"))}`;
+  const past = d.others;
+  const nDelivered = past.filter((x) => x.status === "delivered").length;
+  const nBad = past.filter((x) => x.status === "returned" || x.status === "fake").length;
 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
@@ -87,11 +97,23 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             <StatusPicker value={o.status} disabled={busy} onPick={(s) => patch({ status: s })} />
             <a href={`tel:${o.phone}`} className="rounded-full bg-navy px-4 py-1.5 text-xs font-bold text-white">📞 اتصل</a>
             <a href={wa} target="_blank" rel="noopener" className="rounded-full bg-wa px-4 py-1.5 text-xs font-bold text-white">💬 واتساب</a>
+            {["ready", "shipped"].includes(o.status) && <a href={waShip} target="_blank" rel="noopener" className="rounded-full bg-violet-600 px-4 py-1.5 text-xs font-bold text-white">🚚 واتساب: طلبيتك خرجت</a>}
             {!edit && <button onClick={startEdit} className="rounded-full bg-soft px-4 py-1.5 text-xs font-bold text-navy ring-1 ring-line">✏️ تعديل</button>}
             <a href={`/admin/print?ids=${o.id}`} target="_blank" className="rounded-full bg-soft px-4 py-1.5 text-xs font-bold text-navy ring-1 ring-line">🖨️ طباعة</a>
           </div>
         </div>
       </section>
+
+      {nBad > 0 ? (
+        <section className="rounded-2xl bg-red-50 p-4 ring-1 ring-red-200">
+          <p className="font-extrabold text-red-800">🚨 انتبه: هاد الرقم رجّع ولا كان مزيف {nBad} مرة قبل{nDelivered ? ` (واستلم ${nDelivered})` : ""}</p>
+          <p className="mt-1 text-sm text-red-900">أكّد معاه مليح فالتيليفون (الاسم، الولاية، الوقت اللي يكون فيه)، ولا اطلب منو يأكد بالواتساب قبل ما تبعث. إذا عاودها: احظر الرقم.</p>
+        </section>
+      ) : nDelivered > 0 ? (
+        <section className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
+          <p className="font-extrabold text-green-800">✅ زبون مضمون: استلم {nDelivered} طلبية قبل</p>
+        </section>
+      ) : null}
 
       {d.others.length > 0 && (
         <section className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">

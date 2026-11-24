@@ -28,7 +28,8 @@ export default function ThankYou({ whatsapp }: { whatsapp: string }) {
   }, [id]);
 
   const n = whatsapp.replace(/\D/g, "").replace(/^0/, "213");
-  const wa = n ? `https://wa.me/${n}?text=${encodeURIComponent(`السلام عليكم، درت طلبية رقم ${id ?? ""}`)}` : null;
+  // الزبون يأكد وحدو بالواتساب = طلبية حقيقية وتخرج أسرع (وأقل روتور)
+  const wa = n ? `https://wa.me/${n}?text=${encodeURIComponent(`السلام عليكم، نأكد طلبيتي رقم #${id ?? ""}${order ? ` (${order.name}) — ${formatPrice(order.total)}` : ""} ✅`)}` : null;
   return (
     <div className="mx-auto max-w-xl px-4 py-16 text-center">
       <div className="mx-auto grid size-20 place-items-center rounded-full bg-ok/10 text-4xl">✅</div>
@@ -40,8 +41,13 @@ export default function ThankYou({ whatsapp }: { whatsapp: string }) {
         <p>فريقنا يتصل بيك فأقرب وقت باش يأكد الطلبية. <b>خلي تيليفونك مفتوح</b> باش ما تفوتكش المكالمة.</p>
         <p>من بعد التأكيد نبعثو الطلبية، ومدة التوصيل حسب الولاية. تخلص كي تستلم.</p>
       </div>
+      {wa && (
+        <a href={wa} className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-wa px-6 py-4 text-lg font-extrabold text-white shadow-lg shadow-wa/30">
+          💬 أكّد طلبيتك دركا على الواتساب
+        </a>
+      )}
+      {wa && <p className="mt-2 text-xs text-muted">⚡ أسرع طريقة باش تأكد طلبيتك</p>}
       <div className="mt-6 flex flex-wrap justify-center gap-3">
-        {wa && <a href={wa} className="rounded-2xl bg-wa px-6 py-3 font-bold text-white">أكّد على الواتساب</a>}
         <Link href="/" className="rounded-2xl bg-navy px-6 py-3 font-bold text-white">رجوع للمتجر</Link>
       </div>
     </div>

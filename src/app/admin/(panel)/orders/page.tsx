@@ -7,9 +7,10 @@ import StatusPicker from "@/components/admin/StatusPicker";
 import { Empty, Skeleton, confirmAction, toast, useCan } from "@/components/admin/ui";
 import { groups, statuses, type Order, type Status } from "@/lib/order-types";
 import { defaultWilayas } from "@/lib/wilayas";
+import { riskColor, riskOf, type PhoneHistory } from "@/lib/abandoned-types";
 
 type Row = Order & { image: string | null };
-type Res = { orders: Row[]; total: number; page: number; per: number; counts: Record<string, number>; products: { id: string; name: string }[] };
+type Res = { history?: Record<string, PhoneHistory>; dups?: Record<string, string>; orders: Row[]; total: number; page: number; per: number; counts: Record<string, number>; products: { id: string; name: string }[] };
 
 const dzToday = () => new Date(Date.now() + 3600_000).toISOString().slice(0, 10);
 const daysAgo = (n: number) => new Date(Date.now() + 3600_000 - n * 86400_000).toISOString().slice(0, 10);
@@ -17,6 +18,19 @@ const when = (iso: string) => {
   const d = new Date(iso);
   return { d: d.toLocaleDateString("fr-DZ", { timeZone: "Africa/Algiers", day: "2-digit", month: "2-digit", year: "numeric" }), t: d.toLocaleTimeString("fr-DZ", { timeZone: "Africa/Algiers", hour: "2-digit", minute: "2-digit" }) };
 };
+
+// شارة الزبون: رجّع/مزيف قبل (أحمر) — استلم قبل (أخضر) — طلبية مكررة
+function Risk({ o, d }: { o: Row; d: Res }) {
+  const r = riskOf(d.history?.[o.phone]);
+  const dup = d.dups?.[o.id];
+  if (r.level === "new" && !dup) return null;
+  return (
+    <span className="mt-1 flex flex-wrap gap-1">
+      {r.level !== "new" && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${riskColor[r.level]}`}>{r.level === "bad" ? "⚠️ " : r.level === "good" ? "✅ " : ""}{r.text}</span>}
+      {dup && <Link href={`/admin/orders/${dup}`} className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">📑 مكررة؟ #{dup}</Link>}
+    </span>
+  );
+}
 
 function Orders() {
   const router = useRouter();
@@ -172,7 +186,7 @@ function Orders() {
                       <span className="min-w-0"><span className="line-clamp-1 max-w-44 text-xs font-bold">{o.product_name}{o.quantity > 1 && <b> ×{o.quantity}</b>}</span><span className="text-[11px] text-muted" dir="ltr">#{o.id}</span></span>
                     </Link>
                   </td>
-                  <td className="p-3 font-bold text-navy">{o.customer_name}{o.internal_note && <span title={o.internal_note}> 📝</span>}</td>
+                  <td className="p-3 font-bold text-navy">{o.customer_name}{o.internal_note && <span title={o.internal_note}> 📝</span>}<Risk o={o} d={d} /></td>
                   <td className="p-3"><a href={`tel:${o.phone}`} className="inline-flex items-center gap-1 rounded-lg bg-brand/10 px-2.5 py-1.5 font-bold text-brand hover:bg-brand hover:text-white" dir="ltr">📞 {o.phone}</a></td>
                   <td className="p-3 text-xs">{o.wilaya_code} - {o.wilaya_name}<br /><span className="text-muted">{o.delivery_method === "desk" ? "🏢 مكتب" : "🏠 دار"}</span></td>
                   <td className="p-3 text-xs text-muted" dir="ltr">{t.d}<br />{t.t}</td>
@@ -199,6 +213,7 @@ function Orders() {
                     <span className="shrink-0 text-sm font-extrabold text-brand">{fmt(o.total)}</span>
                   </Link>
                   <p className="truncate text-xs text-muted">{o.wilaya_name} · {when(o.created_at).d} · {o.product_name}</p>
+                  <Risk o={o} d={d} />
                   <div className="flex flex-wrap items-center gap-2">
                     <a href={`tel:${o.phone}`} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white">📞 اتصل</a>
                     <StatusPicker value={o.status} onPick={(s) => setStatus([o.id], s)} />

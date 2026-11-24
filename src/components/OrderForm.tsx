@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Wilaya } from "@/lib/wilayas";
 import { formatPrice } from "@/lib/config";
@@ -41,6 +41,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
   const free = !!product.freeShipping;
+  const formRef = useRef<HTMLFormElement>(null);
 
   // العروض: إذا صاحب المتجر حط عروض، الزبون يختار واحد (قطعة وحدة ديما كاينة)
   const offers: Offer[] = useMemo(() => {
@@ -75,6 +76,45 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
   useEffect(() => { if (method === "desk" && !hasDesk) setMethod("home"); }, [method, hasDesk]);
   useEffect(() => { if (shown && commune && !shown.some((c) => c.name === commune)) setCommune(""); }, [shown, commune]);
 
+  // الطلبات المتروكة: كي يكتب الزبون رقم صحيح نحفظو المسودة (حتى إذا خرج بلا ما يأكد)
+  const draft = useRef("");
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const sent = useRef("");
+  const done = useRef(false);
+  const live = useRef({ variant, qty, wilaya, method, commune });
+  live.current = { variant, qty, wilaya, method, commune };
+  const draftKey = `dhi-draft:${product.slug}`;
+  useEffect(() => {
+    try { draft.current = sessionStorage.getItem(draftKey) || ""; } catch {}
+    if (!draft.current) {
+      draft.current = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
+      try { sessionStorage.setItem(draftKey, draft.current); } catch {}
+    }
+  }, [draftKey]);
+  const flush = useCallback((beacon = false) => {
+    clearTimeout(timer.current);
+    const f = formRef.current;
+    if (done.current || !f || !draft.current) return;
+    const val = (k: string) => String((f.elements.namedItem(k) as HTMLInputElement | null)?.value || "");
+    const phone = val("phone").replace(/[\s.-]/g, "").replace(/^(\+213|00213)/, "0");
+    if (!/^0[567]\d{8}$/.test(phone)) return;
+    const { variant: v, qty: q, wilaya: wl, method: m, commune: c } = live.current;
+    const body = JSON.stringify({ draft: draft.current, product: product.slug, variant: v, quantity: q, wilaya: wl, method: m, commune: c, name: val("name"), phone, website: val("website") });
+    if (body === sent.current) return;
+    sent.current = body;
+    if (beacon && navigator.sendBeacon) navigator.sendBeacon("/api/abandoned", new Blob([body], { type: "application/json" }));
+    else fetch("/api/abandoned", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => { sent.current = ""; });
+  }, [product.slug]);
+  const later = useCallback(() => { clearTimeout(timer.current); timer.current = setTimeout(() => flush(), 2500); }, [flush]);
+  useEffect(() => { later(); }, [variant, qty, wilaya, method, commune, later]);
+  useEffect(() => {
+    const hide = () => { if (document.visibilityState === "hidden") flush(true); };
+    const leave = () => flush(true);
+    document.addEventListener("visibilitychange", hide);
+    window.addEventListener("pagehide", leave);
+    return () => { document.removeEventListener("visibilitychange", hide); window.removeEventListener("pagehide", leave); flush(true); };
+  }, [flush]);
+
   const onStart = () => {
     if (started.current) return;
     started.current = true;
@@ -87,18 +127,20 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
     if (busy) return;
     const fd = new FormData(e.currentTarget);
     setBusy(true); setErrors({}); setMsg("");
+    clearTimeout(timer.current);
+    done.current = true;
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product: product.slug, variant, quantity: qty, wilaya, method, commune,
-          name: fd.get("name"), phone: fd.get("phone"), website: fd.get("website"),
+          name: fd.get("name"), phone: fd.get("phone"), website: fd.get("website"), draft: draft.current,
         }),
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        try { sessionStorage.setItem("lastOrder", JSON.stringify({ id: data.id, total: data.total, pid: product.id, name: product.name, qty })); } catch {}
+        try { sessionStorage.setItem("lastOrder", JSON.stringify({ id: data.id, total: data.total, pid: product.id, name: product.name, qty })); sessionStorage.removeItem(draftKey); } catch {}
         router.push(`/thank-you?id=${data.id}`);
         return;
       }
@@ -107,6 +149,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
     } catch {
       setMsg("ما قدرناش نبعثو الطلبية، تأكّد من الإنترنت وعاود");
     }
+    done.current = false;
     setBusy(false);
   }
 
@@ -122,8 +165,8 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
   let n = 0;
 
   return (
-    <form id="order" onSubmit={submit} onFocus={onStart}
-      onInput={(e) => { const k = (e.target as HTMLInputElement).name; if (k) clearErr(k); }} noValidate
+    <form id="order" ref={formRef} onSubmit={submit} onFocus={onStart}
+      onInput={(e) => { const k = (e.target as HTMLInputElement).name; if (k) clearErr(k); if (k === "name" || k === "phone") later(); }} noValidate
       className="scroll-mt-28 overflow-hidden rounded-[1.75rem] bg-white shadow-[0_20px_50px_-12px_rgba(11,31,58,.25)] ring-1 ring-line">
 
       {/* الراس: المنتج والسعر */}
@@ -191,6 +234,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
             <div><div className={box("name")}>{icon(I.user)}<input name="name" autoComplete="name" placeholder="الاسم واللقب" aria-label="الاسم واللقب" className={input} required /></div>{err("name")}</div>
             <div><div className={box("phone")}>{icon(I.phone)}<input name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="رقم الهاتف (05 / 06 / 07)" aria-label="رقم الهاتف" className={input} required /></div>{err("phone")}</div>
           </div>
+          <p className="mt-2 text-xs text-muted">🔒 نستعملو رقمك غير باش نتصلو بيك على هاد الطلبية.</p>
         </div>
 
         <div>

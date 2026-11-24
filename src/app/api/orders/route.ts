@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { getProduct } from "@/lib/catalog";
-import { getSettings, getWilayas } from "@/lib/settings";
-import { saveOrder, notifyTelegram, type Order } from "@/lib/orders";
-import { adjustStock, availableStock } from "@/lib/stock";
-import { carrier, communes, type Commune } from "@/lib/ecotrack";
-import { formatPrice } from "@/lib/config";
+import { getSettings } from "@/lib/settings";
+import { placeOrder } from "@/lib/checkout";
+import { markConverted } from "@/lib/abandoned";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
 const hits = new Map<string, number[]>();
@@ -29,103 +26,23 @@ export async function POST(req: Request) {
   // فخ للروبوتات (حقل مخفي)
   if (clean(body.website)) return NextResponse.json({ ok: true, id: "0" });
 
-  const name = clean(body.name, 80);
-  const phone = clean(body.phone, 20).replace(/[\s.-]/g, "").replace(/^(\+213|00213)/, "0");
-  const wilayaCode = Number(body.wilaya);
-  const commune = clean(body.commune, 80);
-  const address = clean(body.address, 200);
-  const method = body.method === "desk" ? "desk" : "home";
-  const quantity = Math.min(Math.max(parseInt(String(body.quantity)) || 1, 1), 10);
-  const note = clean(body.note, 300);
-
-  const errors: Record<string, string> = {};
-  if (name.length < 3) errors.name = "دخّل الاسم الكامل";
-  if (!/^0[567]\d{8}$/.test(phone)) errors.phone = "رقم الهاتف لازم يبدا بـ 05 / 06 / 07 وفيه 10 أرقام";
-  const wilaya = (await getWilayas()).find((w) => w.code === wilayaCode);
-  if (!wilaya) errors.wilaya = "اختار الولاية";
-  if (commune.length < 2) errors.commune = method === "desk" ? "اختار المكتب" : "اختار البلدية";
-  // البلديات والمكاتب من World Express: لازم البلدية تكون فالقائمة تاعهم
-  let list: Commune[] = [];
-  if (wilaya && carrier.enabled) { try { list = await communes(wilaya.code, true); } catch { list = []; } }
-  if (wilaya && list.length && commune.length >= 2) {
-    const c = list.find((x) => x.name.toLowerCase() === commune.toLowerCase());
-    if (!c) errors.commune = "اختار البلدية من القائمة";
-    else if (method === "desk" && !c.desk) errors.commune = "ما كانش مكتب فهاد البلدية، اختار مكتب من القائمة";
-  }
-  if (wilaya && method === "desk" && list.length && !list.some((x) => x.desk)) errors.method = "ما كانش مكتب فهاد الولاية، اختار التوصيل للدار";
-
-  const product = await getProduct(clean(body.product, 100));
-  if (!product) return NextResponse.json({ error: "المنتج غير متوفر" }, { status: 400 });
-
-  let unitPrice = product.price;
-  let variant: string | null = null;
-  if (product.variants.length) {
-    const v = product.variants.find((x) => x.name === body.variant);
-    if (!v) errors.variant = "اختار النوع";
-    else { unitPrice = v.price; variant = v.name; }
-  }
-
-  const baseFee = wilaya ? (method === "desk" ? wilaya.desk : wilaya.home) : null;
-  // توصيل مجاني لهاد المنتج: نفس الطرق (المكتب غير وين كاين) بصح بلا ثمن
-  const fee = baseFee === null ? null : product.freeShipping ? 0 : baseFee;
-  if (wilaya && fee === null) errors.method = "ما كانش مكتب فهاد الولاية، اختار التوصيل للدار";
-
-  // العروض: عدد القطع بسعر كامل (غير للمنتجات بلا أنواع)
-  const offer = !product.variants.length ? (product.offers || []).find((o) => o.qty === quantity) : undefined;
-  const subtotal = offer ? offer.price : unitPrice * quantity;
-  if (offer) unitPrice = Math.round(offer.price / offer.qty);
-
-  if (Object.keys(errors).length) return NextResponse.json({ errors }, { status: 422 });
-
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || null;
-  // الأرقام والـ IP المحظورين: نرجعو "نجحت" بلا ما نحفظو (المحتال ما يعرفش)
-  const { blocked } = await getSettings();
-  if (blocked.phones.includes(phone) || (ip && blocked.ips.includes(ip))) {
-    return NextResponse.json({ ok: true, id: Date.now().toString(36).toUpperCase(), total: 0 });
-  }
-  if (limited(`p:${phone}`) || (ip && limited(`i:${ip}`))) {
-    return NextResponse.json({ error: "بعثت بزاف طلبيات. عاود بعد شوية ولا اتصل بينا." }, { status: 429 });
-  }
-
-  const order: Order = {
-    id: `${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 90 + 10)}`,
-    created_at: new Date().toISOString(),
-    status: "new",
-    customer_name: name,
-    phone,
-    wilaya_code: wilaya!.code,
-    wilaya_name: wilaya!.name,
-    commune,
-    address: method === "home" ? address : "",
-    delivery_method: method,
-    product_id: product.id,
-    product_name: product.name,
-    variant,
-    quantity,
-    unit_price: unitPrice,
-    shipping_fee: fee!,
-    total: subtotal + fee!,
-    note: [offer ? `🎁 عرض: ${offer.qty} قطع بـ ${formatPrice(offer.price)}` : "", product.freeShipping ? "🚚 توصيل مجاني" : "", note].filter(Boolean).join(" — "),
+  const r = await placeOrder({ ...body, product: clean(body.product, 100) }, {
     ip,
-  };
+    gate: async (o) => {
+      // الأرقام والـ IP المحظورين: نرجعو "نجحت" بلا ما نحفظو (المحتال ما يعرفش)
+      const { blocked } = await getSettings();
+      if (blocked.phones.includes(o.phone) || (ip && blocked.ips.includes(ip))) return { ok: false, status: 200, blocked: true };
+      if (limited(`p:${o.phone}`) || (ip && limited(`i:${ip}`))) return { ok: false, status: 429, error: "بعثت بزاف طلبيات. عاود بعد شوية ولا اتصل بينا." };
+      return null;
+    },
+  });
 
-  // المخزون: إذا كان متبوع، لازم يكفي، ونحجزوه للطلبية
-  const avail = await availableStock(product.id);
-  if (avail !== null && avail < quantity) {
-    return NextResponse.json({ error: avail === 0 ? "نفذ المخزون تاع هاد المنتج 😔 راسلنا على الواتساب" : `باقي غير ${avail} فالمخزون` }, { status: 409 });
+  if (!r.ok) {
+    if (r.blocked) return NextResponse.json({ ok: true, id: Date.now().toString(36).toUpperCase(), total: 0 });
+    return NextResponse.json(r.errors ? { errors: r.errors } : { error: r.error }, { status: r.status });
   }
-  const res = await adjustStock(product.id, -quantity, "order", order.id, "زبون");
-  if (res.tracked && !res.ok) return NextResponse.json({ error: "نفذ المخزون تاع هاد المنتج 😔" }, { status: 409 });
-  order.stock_applied = res.tracked;
-
-  try {
-    await saveOrder(order);
-  } catch (e) {
-    if (res.tracked) await adjustStock(product.id, quantity, "order-failed", order.id, "النظام");
-    console.error(e);
-    return NextResponse.json({ error: "صرا مشكل، عاود جرّب ولا اتصل بينا على الواتساب" }, { status: 500 });
-  }
-  await notifyTelegram(order);
-
-  return NextResponse.json({ ok: true, id: order.id, total: order.total });
+  // الطلبية المتروكة (إذا كانت) ولات طلبية حقيقية
+  await markConverted(r.order, clean(body.draft, 40), true).catch(() => {});
+  return NextResponse.json({ ok: true, id: r.order.id, total: r.order.total });
 }

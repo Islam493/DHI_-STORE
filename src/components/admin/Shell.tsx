@@ -10,6 +10,7 @@ type Item = { href: string; label: string; icon: string; perm?: Perm; soon?: boo
 const nav: Item[] = [
   { href: "/admin", label: "الرئيسية", icon: "📊", perm: "orders.view" },
   { href: "/admin/orders", label: "الطلبات", icon: "🛒", perm: "orders.view" },
+  { href: "/admin/abandoned", label: "الطلبات المتروكة", icon: "🛍️", perm: "orders.view" },
   { href: "/admin/customers", label: "الزبائن", icon: "👥", perm: "customers.view" },
   { href: "/admin/products", label: "المنتجات وصفحات الهبوط", icon: "📦", perm: "products.view" },
   { href: "/admin/inventory", label: "المخزون", icon: "🏬", perm: "products.view" },
@@ -20,10 +21,9 @@ const nav: Item[] = [
   { href: "/admin/users", label: "الفريق", icon: "🧑‍💼", perm: "users.manage" },
   { href: "/admin/activity", label: "سجل النشاط", icon: "🕓", perm: "audit.view" },
   { href: "/admin/settings", label: "الإعدادات", icon: "⚙️", perm: "settings.edit" },
-  { href: "/admin/abandoned", label: "الطلبات المتروكة", icon: "🛍️", soon: true },
 ];
 
-type Notif = { newOrders: number; lowStock: { id: string; name: string; stock: number }[] };
+type Notif = { newOrders: number; abandoned?: number; lowStock: { id: string; name: string; stock: number }[] };
 
 function Bell() {
   const [n, setN] = useState<Notif | null>(null);
@@ -42,7 +42,7 @@ function Bell() {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
-  const count = (n?.newOrders || 0) + (n?.lowStock.length || 0);
+  const count = (n?.newOrders || 0) + (n?.abandoned || 0) + (n?.lowStock.length || 0);
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)} aria-label="التنبيهات" className="relative grid size-10 place-items-center rounded-xl bg-soft text-lg">
@@ -53,6 +53,7 @@ function Bell() {
           <p className="border-b border-line px-4 py-3 font-extrabold text-navy">🔔 التنبيهات</p>
           {!count && <p className="p-5 text-center text-sm text-muted">ما كانش تنبيهات 👌</p>}
           {!!n?.newOrders && <Link href="/admin/orders?status=new" onClick={() => setOpen(false)} className="block border-b border-line px-4 py-3 text-sm hover:bg-soft">🆕 <b>{n.newOrders}</b> طلبية جديدة تستنى التأكيد</Link>}
+          {!!n?.abandoned && <Link href="/admin/abandoned" onClick={() => setOpen(false)} className="block border-b border-line px-4 py-3 text-sm hover:bg-soft">🛍️ <b>{n.abandoned}</b> طلبية متروكة — اتصل بيهم</Link>}
           {n?.lowStock.map((p) => (
             <Link key={p.id} href="/admin/inventory" onClick={() => setOpen(false)} className="block border-b border-line px-4 py-3 text-sm last:border-0 hover:bg-soft">
               {p.stock === 0 ? "⛔ نفذ" : "⚠️ قليل"}: {p.name} <b className="text-sale">({p.stock})</b>

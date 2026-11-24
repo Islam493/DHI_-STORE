@@ -8,6 +8,7 @@ import { updateOrder, type Order } from "@/lib/orders";
 import { isStatus } from "@/lib/order-types";
 import { actor, fail, guard } from "@/lib/admin-api";
 import { carrier } from "@/lib/ecotrack";
+import { phoneInsights } from "@/lib/abandoned";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,10 @@ export async function GET(req: Request) {
       getAllProducts(true),
     ]);
     const images = Object.fromEntries(products.map((p) => [p.id, p.images[0] || ""]));
+    // تاريخ كل زبون (استلم / رجّع / مزيف) والطلبيات المكررة: باش تعرف شكون تأكد قبل ما تبعث
+    const { history, dups } = await phoneInsights(rows.map((o) => o.phone)).catch(() => ({ history: {}, dups: {} as Record<string, string> }));
     return NextResponse.json({
+      history, dups,
       orders: rows.map((o) => ({ ...o, image: images[o.product_id] || null })),
       total, page, per, counts, carrier: carrier.enabled,
       products: products.map((p) => ({ id: p.id, name: p.name })),
