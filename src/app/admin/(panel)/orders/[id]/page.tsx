@@ -7,6 +7,7 @@ import StatusPicker from "@/components/admin/StatusPicker";
 import ShipPanel from "@/components/admin/ShipPanel";
 import { confirmAction, toast, useCan } from "@/components/admin/ui";
 import { statuses, type Order, type Status } from "@/lib/order-types";
+import { waFor } from "@/lib/wa-messages";
 import type { Wilaya } from "@/lib/wilayas";
 
 type WaMsg = { id: number; at: string; dir: "in" | "out"; kind: string; body: string; status: string; error?: string | null };
@@ -43,14 +44,9 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   if (err) return <p className="rounded-2xl bg-sale/10 p-4 font-semibold text-sale">{err}</p>;
   if (!d) return <p className="p-8 text-center text-muted">جاري التحميل...</p>;
   const o = d.order;
-  const wa = `https://wa.me/${o.phone.replace(/^0/, "213")}?text=${encodeURIComponent(`السلام عليكم ${o.customer_name}، معاك DHI Electronics بخصوص طلبيتك (${o.product_name}) — المجموع ${fmt(o.total)}. نأكدو الطلبية؟`)}`;
+  const wa = waFor("confirm", o);
   // كي تخرج الطلبية: نفكرو الزبون يخلي تليفونو مفتوح (أكبر سبب تاع الروتور: ما يجاوبش الليفرور)
-  const waShip = `https://wa.me/${o.phone.replace(/^0/, "213")}?text=${encodeURIComponent([
-    `السلام عليكم ${o.customer_name} 👋`,
-    `طلبيتك (${o.product_name}) خرجت مع شركة التوصيل 🚚${o.tracking ? `\nرقم التتبع: ${o.tracking}` : ""}`,
-    `الليفرور يعيطلك قريب — خلّي تليفونك مفتوح وحضّر ${fmt(o.total)} 🙏`,
-    "إذا كاين أي مشكل عيّطلنا قبل ما ترجعها. شكراً على ثقتك — DHI Electronics",
-  ].join("\n"))}`;
+  const waShip = waFor("shipped", o);
   const past = d.others;
   const nDelivered = past.filter((x) => x.status === "delivered").length;
   const nBad = past.filter((x) => x.status === "returned" || x.status === "fake").length;

@@ -11,6 +11,9 @@ import { shipOrder } from "./shipping";
 type Flags = {
   confirm_at?: string; reminder_at?: string; replied_at?: string; no_answer_at?: string; hint_at?: string;
   shipped_msg?: string; ofd_msg?: string; missed_msg?: string; delivered_msg?: string; return_alert?: string;
+  // التأكيد اليدوي (من الواتساب العادي): المحاولات والرسائل اللي خرجت
+  attempts?: { k: string; at: string; by?: string }[];
+  sent?: Record<string, string>;
 };
 export type AutoState = { order_id: string; flags: Flags; carrier_status?: string | null; checked_at?: string | null };
 
@@ -44,6 +47,17 @@ async function setState(id: string, patch: Partial<AutoState> = {}, flags?: Flag
     const merged = flags ? { ...(await getState(id)).flags, ...flags } : undefined;
     await dbUpsert(T, { order_id: id, ...patch, ...(merged ? { flags: merged } : {}), updated_at: now() }, "order_id");
   } catch (e) { console.error("automation state:", String(e).slice(0, 200)); }
+}
+
+// الفريق عيّط ولا بعث رسالة من الواتساب تاعو: نسجلو باش ما يعاودش ولا ينسى
+export async function logContact(id: string, kind: string, by: string) {
+  const st = await getState(id);
+  const at = now();
+  const attempts = [...(st.flags.attempts || []), { k: kind, at, by }].slice(-30);
+  const flags: Flags = { attempts };
+  if (kind !== "call") flags.sent = { ...(st.flags.sent || {}), [kind]: at };
+  await setState(id, {}, flags);
+  return { attempts, sent: flags.sent || st.flags.sent || {} };
 }
 
 async function loadOrder(id: string) {

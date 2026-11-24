@@ -10,6 +10,7 @@ type Item = { href: string; label: string; icon: string; perm?: Perm; soon?: boo
 const nav: Item[] = [
   { href: "/admin", label: "الرئيسية", icon: "📊", perm: "orders.view" },
   { href: "/admin/orders", label: "الطلبات", icon: "🛒", perm: "orders.view" },
+  { href: "/admin/follow", label: "التأكيد والمتابعة", icon: "📲", perm: "orders.view" },
   { href: "/admin/abandoned", label: "الطلبات المتروكة", icon: "🛍️", perm: "orders.view" },
   { href: "/admin/customers", label: "الزبائن", icon: "👥", perm: "customers.view" },
   { href: "/admin/products", label: "المنتجات وصفحات الهبوط", icon: "📦", perm: "products.view" },
