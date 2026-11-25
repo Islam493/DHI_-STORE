@@ -6,14 +6,16 @@ import { notifyTelegram } from "@/lib/orders";
 import { sendPush } from "@/lib/push";
 import { onOrderCreated } from "@/lib/automation";
 
-// حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
+// حماية من التكرار: 3 طلبيات كل 10 دقايق لنفس الرقم.
+// الـ IP: بزاف تاع الزبائن (موبيليس، جيزي، أوريدو) يتقاسمو نفس الـ IP، علاه الحد واسع
 const hits = new Map<string, number[]>();
-function limited(key: string) {
+function limited(key: string, max: number) {
   const now = Date.now();
   const arr = (hits.get(key) || []).filter((t) => now - t < 10 * 60_000);
   arr.push(now);
   hits.set(key, arr);
-  return arr.length > 3;
+  if (hits.size > 5000) hits.clear();
+  return arr.length > max;
 }
 
 const clean = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -27,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   // فخ للروبوتات (حقل مخفي)
-  if (clean(body.website)) return NextResponse.json({ ok: true, id: "0" });
+  if (clean(body.hp)) return NextResponse.json({ ok: true, id: "0" });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || null;
   const r = await placeOrder({ ...body, product: clean(body.product, 100) }, {
@@ -35,8 +37,10 @@ export async function POST(req: Request) {
     gate: async (o) => {
       // الأرقام والـ IP المحظورين: نرجعو "نجحت" بلا ما نحفظو (المحتال ما يعرفش)
       const { blocked } = await getSettings();
-      if (blocked.phones.includes(o.phone) || (ip && blocked.ips.includes(ip))) return { ok: false, status: 200, blocked: true };
-      if (limited(`p:${o.phone}`) || (ip && limited(`i:${ip}`))) return { ok: false, status: 429, error: "بعثت بزاف طلبيات. عاود بعد شوية ولا اتصل بينا." };
+      if (blocked.phones.includes(o.phone)) return { ok: false, status: 200, blocked: true };
+      // الـ IP المحظور: ما نمسحوش الطلبية (يقدر يكون زبون آخر بنفس الـ IP)، نعلّموها برك
+      if (ip && blocked.ips.includes(ip)) o.note = ["⚠️ IP محظور: تأكد مليح قبل ما تبعث", o.note].filter(Boolean).join(" — ");
+      if (limited(`p:${o.phone}`, 3) || (ip && limited(`i:${ip}`, 25))) return { ok: false, status: 429, error: "بعثت بزاف طلبيات. عاود بعد شوية ولا اتصل بينا." };
       return null;
     },
   });

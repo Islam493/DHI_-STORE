@@ -6,13 +6,13 @@ import { saveDraft } from "@/lib/abandoned";
 
 // الفورميلار يبعث هنا (بلا ما يضغط الزبون) باش ما تضيعش الطلبية إذا خرج
 const hits = new Map<string, number[]>();
-function limited(key: string) {
+function limited(key: string, max = 40) {
   const now = Date.now();
   const arr = (hits.get(key) || []).filter((t) => now - t < 10 * 60_000);
   arr.push(now);
   hits.set(key, arr);
   if (hits.size > 5000) hits.clear();
-  return arr.length > 40;
+  return arr.length > max;
 }
 
 const clean = (v: unknown, max = 100) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -21,14 +21,14 @@ const ok = () => NextResponse.json({ ok: true });
 export async function POST(req: Request) {
   let b: Record<string, unknown>;
   try { b = JSON.parse(await req.text()); } catch { return ok(); }
-  if (!b || typeof b !== "object" || clean(b.website)) return ok();
+  if (!b || typeof b !== "object" || clean(b.hp)) return ok();
 
   const id = clean(b.draft, 40);
   const phone = normPhone(b.phone);
   if (!/^[a-z0-9]{10,40}$/i.test(id) || !validPhone(phone)) return ok();
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || null;
-  if (limited(`i:${ip}`) || limited(`p:${phone}`)) return ok();
+  if (limited(`i:${ip}`, 150) || limited(`p:${phone}`)) return ok(); // الـ IP يتقاسموه بزاف زبائن
 
   try {
     const [{ blocked }, product, wilayas] = await Promise.all([getSettings(), getProduct(clean(b.product)), getWilayas()]);

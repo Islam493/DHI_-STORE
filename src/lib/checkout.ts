@@ -23,22 +23,34 @@ export type CheckoutResult =
   | { ok: true; order: Order }
   | { ok: false; status: number; errors?: Record<string, string>; error?: string; blocked?: boolean };
 
-const clean = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-export const normPhone = (v: unknown) => clean(v, 20).replace(/[\s.-]/g, "").replace(/^(\+213|00213)/, "0");
+const clean = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().replace(/\s+/g, " ").slice(0, max) : "");
+// الأرقام العربية (٠١٢…) والفارسية (۰۱۲…) ← 0123
+export const latinDigits = (s: string) => s.replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
+// 0661 22 33 44 / +213661223344 / 00213… / 213… / 661223344 ← 0661223344
+export function normPhone(v: unknown) {
+  let d = latinDigits(typeof v === "string" ? v : String(v ?? "")).replace(/\D/g, "").slice(0, 15);
+  if (d.startsWith("00213")) d = d.slice(5);
+  else if (d.startsWith("213") && d.length === 12) d = d.slice(3);
+  if (/^[567]\d{8}$/.test(d)) d = "0" + d;
+  return d;
+}
 export const validPhone = (p: string) => /^0[567]\d{8}$/.test(p);
+// مقارنة البلديات: بلا حروف كبار، بلا accents، بلا فراغات ولا شرطات
+const key = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f\u064B-\u065F]/g, "").replace(/[^a-z0-9\u0621-\u064A]/g, "");
 
 export async function placeOrder(input: CheckoutInput, opts: { ip?: string | null; extraNote?: string; by?: string; gate?: (o: Order) => Promise<CheckoutResult | null> | CheckoutResult | null } = {}): Promise<CheckoutResult> {
   const name = clean(input.name, 80);
+  let handTyped = false;
   const phone = normPhone(input.phone);
   const wilayaCode = Number(input.wilaya);
-  const commune = clean(input.commune, 80);
+  let commune = clean(input.commune, 80);
   const address = clean(input.address, 200);
   const method = input.method === "desk" ? "desk" : "home";
   const quantity = Math.min(Math.max(parseInt(String(input.quantity)) || 1, 1), 10);
   const note = clean(input.note, 300);
 
   const errors: Record<string, string> = {};
-  if (name.length < 3) errors.name = "دخّل الاسم الكامل";
+  if (name.length < 2) errors.name = "دخّل الاسم";
   if (!validPhone(phone)) errors.phone = "رقم الهاتف لازم يبدا بـ 05 / 06 / 07 وفيه 10 أرقام";
   const wilaya = (await getWilayas()).find((w) => w.code === wilayaCode);
   if (!wilaya) errors.wilaya = "اختار الولاية";
@@ -46,10 +58,13 @@ export async function placeOrder(input: CheckoutInput, opts: { ip?: string | nul
   // البلديات والمكاتب من World Express: لازم البلدية تكون فالقائمة تاعهم
   let list: Commune[] = [];
   if (wilaya && carrier.enabled) { try { list = await communes(wilaya.code, true); } catch { list = []; } }
+  // البلدية مكتوبة بطريقة أخرى؟ نلقاوها. ما لقيناهاش؟ نقبلو الطلبية ونخبرو الفريق (ما نحبسوش الزبون)
   if (wilaya && list.length && commune.length >= 2) {
-    const c = list.find((x) => x.name.toLowerCase() === commune.toLowerCase());
-    if (!c) errors.commune = "اختار البلدية من القائمة";
-    else if (method === "desk" && !c.desk) errors.commune = "ما كانش مكتب فهاد البلدية، اختار مكتب من القائمة";
+    const c = list.find((x) => key(x.name) === key(commune));
+    if (c) {
+      commune = c.name;
+      if (method === "desk" && !c.desk) errors.commune = "ما كانش مكتب فهاد البلدية، اختار مكتب من القائمة";
+    } else handTyped = true;
   }
   if (wilaya && method === "desk" && list.length && !list.some((x) => x.desk)) errors.method = "ما كانش مكتب فهاد الولاية، اختار التوصيل للدار";
 
@@ -94,7 +109,7 @@ export async function placeOrder(input: CheckoutInput, opts: { ip?: string | nul
     unit_price: unitPrice,
     shipping_fee: fee!,
     total: subtotal + fee!,
-    note: [opts.extraNote || "", offer ? `🎁 عرض: ${offer.qty} قطع بـ ${formatPrice(offer.price)}` : "", product.freeShipping ? "🚚 توصيل مجاني" : "", note].filter(Boolean).join(" — "),
+    note: [opts.extraNote || "", handTyped ? "⚠️ البلدية مكتوبة باليد: تأكد منها قبل الإرسال" : "", offer ? `🎁 عرض: ${offer.qty} قطع بـ ${formatPrice(offer.price)}` : "", product.freeShipping ? "🚚 توصيل مجاني" : "", note].filter(Boolean).join(" — "),
     ip: opts.ip ?? null,
   };
 

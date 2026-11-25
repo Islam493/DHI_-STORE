@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import BuyBar from "@/components/BuyBar";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -299,12 +300,12 @@ export default async function ProductPage({ params }: Props) {
       </div>
 
       {/* 12. شريط الشراء: ديما ظاهر من الدخول حتى الأخير (تيليفون وكمبيوتر) */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 p-3 backdrop-blur md:inset-x-auto md:bottom-5 md:left-1/2 md:w-[34rem] md:-translate-x-1/2 md:rounded-3xl md:border md:shadow-2xl">
-        <a href="#order" className="cta-nudge cta-shine flex items-center justify-between rounded-2xl bg-brand px-5 py-3 font-extrabold text-white shadow-lg shadow-brand/30 md:py-3.5 md:text-lg">
-          <span className="leading-tight">{isOut(p) ? "نفذ المخزون" : "اطلب الآن"}<span className="block text-[11px] font-semibold opacity-80">{isOut(p) ? "راسلنا على الواتساب" : p.freeShipping ? "🚚 توصيل مجاني · 💵 الدفع عند الاستلام" : "💵 الدفع عند الاستلام"}</span></span>
-          <span className="text-left">{formatPrice(p.price)}{off > 0 && <span className="block text-[11px] font-semibold line-through opacity-70">{formatPrice(p.compareAtPrice!)}</span>}</span>
-        </a>
-      </div>
+      <BuyBar
+        title={isOut(p) ? "نفذ المخزون" : "اطلب الآن"}
+        sub={isOut(p) ? "راسلنا على الواتساب" : p.freeShipping ? "🚚 توصيل مجاني · 💵 الدفع عند الاستلام" : "💵 الدفع عند الاستلام"}
+        price={formatPrice(p.price)}
+        compare={off > 0 ? formatPrice(p.compareAtPrice!) : undefined}
+      />
     </div>
   );
 }

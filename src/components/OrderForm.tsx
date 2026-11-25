@@ -10,6 +10,18 @@ import type { Offer, Product } from "@/lib/catalog";
 type Errors = Record<string, string>;
 type Commune = { name: string; desk: boolean };
 
+// الأرقام العربية (٠١٢…) ← 012، والرقم يتنظف (فراغات، +213…)
+const latin = (s: string) => s.replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
+function cleanPhone(v: string) {
+  let d = latin(v).replace(/\D/g, "");
+  if (d.startsWith("00213")) d = d.slice(5); else if (d.startsWith("213") && d.length === 12) d = d.slice(3);
+  if (/^[567]\d{8}$/.test(d)) d = "0" + d;
+  return d;
+}
+const SAVED = "dhi-customer"; // الزبون اللي طلب قبل: نعمّرولو معلوماتو
+// وين نروحو كي تكون غلطة (الخانة)
+const FIELD: Record<string, string> = { name: 'input[name="name"]', phone: 'input[name="phone"]', wilaya: 'select[aria-label="الولاية"]', commune: '[aria-label="البلدية"]', method: '[data-field="method"]', variant: '[data-field="variant"]' };
+
 const pieces = (n: number) => (n === 1 ? "قطعة وحدة" : n === 2 ? "زوج قطع" : `${n} قطع`);
 
 // أيقونات صغار (بلا مكتبات)
@@ -61,9 +73,24 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
   const total = subtotal + (fee ?? 0);
   const shown = list ? (method === "desk" ? deskList! : list) : null;
 
+  // الزبون اللي طلب قبل من هاد التيليفون: نعمّرولو الاسم، الرقم، الولاية والبلدية
+  const savedCommune = useRef("");
+  useEffect(() => {
+    try {
+      const c = JSON.parse(localStorage.getItem(SAVED) || "null");
+      const f = formRef.current;
+      if (!c || !f) return;
+      const set = (n: string, v: string) => { const el = f.elements.namedItem(n) as HTMLInputElement | null; if (el && !el.value && v) el.value = v; };
+      set("name", c.name || ""); set("phone", c.phone || "");
+      if (c.wilaya && wilayas.some((w) => w.code === c.wilaya)) { savedCommune.current = c.commune || ""; setWilaya(c.wilaya); }
+      if (c.method === "desk" || c.method === "home") setMethod(c.method);
+    } catch { /* ما كانش */ }
+  }, [wilayas]);
+
   // البلديات تاع الولاية من World Express
   useEffect(() => {
-    setCommune(""); setList(null);
+    // البلدية المحفوظة (زبون رجع) نحطوها غير كي تكون الولاية مختارة
+    setCommune(wilaya ? savedCommune.current : ""); if (wilaya) savedCommune.current = ""; setList(null);
     if (!wilaya) return;
     let alive = true;
     setLoading(true);
@@ -99,7 +126,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
     const phone = val("phone").replace(/[\s.-]/g, "").replace(/^(\+213|00213)/, "0");
     if (!/^0[567]\d{8}$/.test(phone)) return;
     const { variant: v, qty: q, wilaya: wl, method: m, commune: c } = live.current;
-    const body = JSON.stringify({ draft: draft.current, product: product.slug, variant: v, quantity: q, wilaya: wl, method: m, commune: c, name: val("name"), phone, website: val("website") });
+    const body = JSON.stringify({ draft: draft.current, product: product.slug, variant: v, quantity: q, wilaya: wl, method: m, commune: c, name: val("name"), phone, hp: val("dhi_hp_x") });
     if (body === sent.current) return;
     sent.current = body;
     if (beacon && navigator.sendBeacon) navigator.sendBeacon("/api/abandoned", new Blob([body], { type: "application/json" }));
@@ -123,10 +150,28 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
   };
   const clearErr = (k: string) => errors[k] && setErrors((prev) => { const next = { ...prev }; delete next[k]; return next; });
 
+  // نوديو الزبون للخانة اللي فيها الغلطة (ماشي لفوق الفورميلار)
+  function showErrors(errs: Errors, text: string) {
+    setErrors(errs); setMsg(text);
+    const first = ["variant", "name", "phone", "wilaya", "method", "commune"].find((k) => errs[k]);
+    const el = first ? formRef.current?.querySelector<HTMLElement>(FIELD[first]) : null;
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => el.focus?.({ preventScroll: true }), 350); }
+  }
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
     const fd = new FormData(e.currentTarget);
+    const phone = cleanPhone(String(fd.get("phone") || ""));
+    const name = String(fd.get("name") || "").trim();
+    // نتأكدو قبل ما نبعثو (دغيا، بلا انترنت)
+    const errs: Errors = {};
+    if (product.variants.length && !variant) errs.variant = "اختار النوع";
+    if (name.length < 2) errs.name = "اكتب اسمك";
+    if (!/^0[567]\d{8}$/.test(phone)) errs.phone = "رقم الهاتف: 10 أرقام يبدا بـ 05 ولا 06 ولا 07";
+    if (!wilaya) errs.wilaya = "اختار الولاية";
+    else if (!commune.trim()) errs.commune = method === "desk" ? "اختار المكتب" : "اختار البلدية";
+    if (Object.keys(errs).length) return showErrors(errs, "باقي حاجة صغيرة ⬆️ كمّلها وعاود اضغط");
     setBusy(true); setErrors({}); setMsg("");
     clearTimeout(timer.current);
     done.current = true;
@@ -136,17 +181,18 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product: product.slug, variant, quantity: qty, wilaya, method, commune,
-          name: fd.get("name"), phone: fd.get("phone"), website: fd.get("website"), draft: draft.current,
+          name, phone, hp: fd.get("dhi_hp_x"), draft: draft.current,
         }),
       });
       const data = await res.json();
       if (res.ok && data.ok) {
         try { sessionStorage.setItem("lastOrder", JSON.stringify({ id: data.id, total: data.total, pid: product.id, name: product.name, qty })); sessionStorage.removeItem(draftKey); } catch {}
+        try { localStorage.setItem(SAVED, JSON.stringify({ name, phone, wilaya, commune, method })); } catch {}
         router.push(`/thank-you?id=${data.id}`);
         return;
       }
-      if (data.errors) setErrors(data.errors);
-      setMsg(data.error || "تأكّد من المعلومات اللي باللون الأحمر");
+      if (data.errors) showErrors(data.errors, "تأكّد من المعلومات اللي باللون الأحمر ⬆️");
+      else setMsg(data.error || "صرا مشكل، عاود اضغط ولا اتصل بينا");
     } catch {
       setMsg("ما قدرناش نبعثو الطلبية، تأكّد من الإنترنت وعاود");
     }
@@ -167,7 +213,11 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
 
   return (
     <form id="order" ref={formRef} onSubmit={submit} onFocus={onStart}
-      onInput={(e) => { const k = (e.target as HTMLInputElement).name; if (k) clearErr(k); if (k === "name" || k === "phone") later(); }} noValidate
+      onInput={(e) => {
+        const el = e.target as HTMLInputElement; const k = el.name;
+        if (k === "phone" && /[\u0660-\u0669\u06F0-\u06F9]/.test(el.value)) el.value = latin(el.value);
+        if (k) clearErr(k); if (k === "name" || k === "phone") later();
+      }} noValidate
       className="scroll-mt-28 overflow-hidden rounded-[1.75rem] bg-white shadow-[0_20px_50px_-12px_rgba(11,31,58,.25)] ring-1 ring-line">
 
       {/* الراس: المنتج والسعر */}
@@ -215,7 +265,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
         )}
 
         {product.variants.length > 0 && (
-          <div>
+          <div data-field="variant" tabIndex={-1} className="outline-none">
             {label("النوع / اللون", ++n)}
             <div className="flex flex-wrap gap-2">
               {product.variants.map((v) => (
@@ -248,7 +298,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
           </div>
           {err("wilaya")}
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div data-field="method" tabIndex={-1} className="mt-3 grid grid-cols-2 gap-2 outline-none">
             {([["home", "للدار", I.home, w?.home ?? null, true], ["desk", "للمكتب", I.desk, w?.desk ?? null, hasDesk]] as const).map(([k, t, ic, price, ok]) => {
               const on = method === k, off = !!w && (!ok || price == null);
               return (
@@ -287,7 +337,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
           </div>
         </div>
 
-        <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
+        <input name="dhi_hp_x" tabIndex={-1} autoComplete="new-password" className="hidden" aria-hidden />
 
         {offers.length === 0 && (
           <div className="flex items-center justify-between rounded-2xl border-2 border-line p-3">
@@ -313,7 +363,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
 
         {msg && <p className="rounded-xl bg-sale/10 p-3 text-sm font-semibold text-sale">{msg}</p>}
 
-        <button disabled={busy} className="cta-pulse group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-l from-brand to-[#1d5fd0] py-4 text-lg font-extrabold text-white shadow-lg shadow-brand/30 transition hover:brightness-110 disabled:opacity-60">
+        <button type="submit" disabled={busy} className="cta-pulse group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-l from-brand to-[#1d5fd0] py-4 text-lg font-extrabold text-white shadow-lg shadow-brand/30 transition hover:brightness-110 disabled:opacity-60">
           {busy ? "جاري الإرسال..." : <>أكّد الطلبية — {formatPrice(total)} <span aria-hidden className="transition group-hover:-translate-x-1">←</span></>}
         </button>
 
