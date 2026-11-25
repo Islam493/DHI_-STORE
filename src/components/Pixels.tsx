@@ -3,6 +3,8 @@ import { getSettings } from "@/lib/settings";
 
 const clean = (v: string) => v.replace(/[^A-Za-z0-9_-]/g, "");
 
+// فيسبوك: الزبون اللي طلب قبل (معلوماتو محفوظة فالمتصفح تاعو) ← نعطيو للبيكسل رقمو واسمو وبلديتو.
+// البيكسل يشفّرهم (SHA-256) قبل ما يخرجو، وهكا فيسبوك يعرف شكون اشترى من أنهي إعلان (Advanced Matching يدوي، بلا مفتاح)
 export default async function Pixels() {
   const px = (await getSettings()).pixels;
   const fb = clean(px.facebook), tt = clean(px.tiktok), sc = clean(px.snapchat);
@@ -12,7 +14,8 @@ export default async function Pixels() {
       {fb && (
         <Script id="fb-pixel" strategy="afterInteractive">{`
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init','${fb}');fbq('track','PageView');`}</Script>
+var am={};try{var c=JSON.parse(localStorage.getItem('dhi-customer')||'null');if(c&&c.phone){am.ph=String(c.phone).replace(/\\D/g,'').replace(/^0/,'213');var n=String(c.name||'').trim().toLowerCase().split(/\\s+/);if(n[0])am.fn=n[0];if(n.length>1)am.ln=n.slice(1).join('');if(c.commune)am.ct=String(c.commune).toLowerCase().replace(/[^a-z\\u0621-\\u064A]/g,'');am.country='dz';}}catch(e){}
+fbq('init','${fb}',am);fbq('track','PageView');`}</Script>
       )}
       {tt && (
         <Script id="tt-pixel" strategy="afterInteractive">{`
