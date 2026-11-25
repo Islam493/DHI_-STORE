@@ -40,6 +40,7 @@ export default function Automation() {
     try {
       const r = await api<Record<string, unknown>>("/api/admin/automation", { method: "POST", body: JSON.stringify({ action, ...extra }) });
       if (action === "test") toast("خرجت ✅ شوف الواتساب تاعك");
+      if (action === "telegram") toast("خرجت ✅ شوف تيليغرام");
       if (action === "track") setTrack(r as never);
       if (action === "tick") { setTickRes(r.result as Record<string, unknown>); load(); }
     } catch (e) { toast((e as Error).message, false); }
@@ -144,6 +145,7 @@ export default function Automation() {
         <div className="flex flex-wrap gap-2">
           <input value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="رقم تتبع World Express" dir="ltr" className={`${input} max-w-56`} />
           <button onClick={() => act("track", { tracking })} disabled={busy === "track" || !tracking} className="rounded-xl bg-navy px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">🔍 اقرا الحالة</button>
+          <button onClick={() => act("telegram")} disabled={busy === "telegram"} className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">✈️ جرّب تيليغرام</button>
           <button onClick={() => act("tick")} disabled={busy === "tick"} className="rounded-xl bg-soft px-4 py-2.5 text-sm font-bold text-navy ring-1 ring-line disabled:opacity-60">{busy === "tick" ? "..." : "▶️ شغّل الدورة دركا"}</button>
         </div>
         {track && (

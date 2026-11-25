@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ConfirmHost, MeProvider, Toaster, useMe } from "./ui";
+import { ConfirmHost, MeProvider, Toaster, toast, useMe } from "./ui";
 import { roleLabel, type Perm } from "@/lib/perms";
 
 type Item = { href: string; label: string; icon: string; perm?: Perm; soon?: boolean };
@@ -25,19 +25,84 @@ const nav: Item[] = [
   { href: "/admin/settings", label: "الإعدادات", icon: "⚙️", perm: "settings.edit" },
 ];
 
-type Notif = { newOrders: number; abandoned?: number; lowStock: { id: string; name: string; stock: number }[] };
+type Latest = { id: string; created_at: string; customer_name: string; product_name: string; total: number; wilaya_name: string };
+type Notif = { newOrders: number; abandoned?: number; lowStock: { id: string; name: string; stock: number }[]; latest?: Latest | null };
+
+// صوت «تيلين» بلا ملفات (يخدم من بعد أول كليك فالصفحة، قاعدة المتصفحات)
+let audio: AudioContext | null = null;
+function ding() {
+  try {
+    audio ||= new AudioContext();
+    if (audio.state === "suspended") audio.resume();
+    [0, 0.18, 0.36].forEach((t, i) => {
+      const o = audio!.createOscillator(); const g = audio!.createGain();
+      o.type = "sine"; o.frequency.value = [880, 1175, 1568][i];
+      g.gain.setValueAtTime(0.0001, audio!.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.35, audio!.currentTime + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, audio!.currentTime + t + 0.3);
+      o.connect(g).connect(audio!.destination); o.start(audio!.currentTime + t); o.stop(audio!.currentTime + t + 0.32);
+    });
+  } catch { /* المتصفح ما يسمحش */ }
+}
+const LAST_KEY = "dhi-last-order";
+let memoSeen: string | null = null; // إذا المتصفح ما يخليش localStorage
+const SOUND_KEY = "dhi-sound";
 
 function Bell() {
   const [n, setN] = useState<Notif | null>(null);
   const [open, setOpen] = useState(false);
+  const [perm, setPerm] = useState<string>("default");
+  const [sound, setSound] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  useEffect(() => {
+    setPerm(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
+    try { setSound(localStorage.getItem(SOUND_KEY) !== "off"); } catch {}
+    // أول كليك فالصفحة يفتح الصوت (المتصفحات تمنع الصوت قبل)
+    const unlock = () => { try { audio ||= new AudioContext(); audio.resume(); } catch {} };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => window.removeEventListener("pointerdown", unlock);
+  }, []);
   useEffect(() => {
     let alive = true;
-    const load = () => { if (document.visibilityState === "visible") fetch("/api/admin/notify").then((r) => r.ok && r.json()).then((d) => alive && d && setN(d)).catch(() => {}); };
+    // كل 30 ثانية (حتى إذا الصفحة مخبية ورا صفحة أخرى) باش تعرف دغيا كي تدخل طلبية
+    const load = () => fetch("/api/admin/notify").then((r) => r.ok && r.json()).then((d: Notif) => {
+      if (!alive || !d) return;
+      setN(d);
+      const l = d.latest;
+      // أول مرة نحلّو: نحفظو آخر طلبية كاينة (ولا «0» إذا ما كانش) وما نصونوش على القدام
+      let seen: string | null = memoSeen;
+      try { seen = localStorage.getItem(LAST_KEY); } catch {}
+      const save = (v: string) => { memoSeen = v; try { localStorage.setItem(LAST_KEY, v); } catch {} };
+      if (seen === null) { save(l?.created_at || "0"); return; }
+      if (!l || l.created_at <= seen) return;
+      save(l.created_at);
+      let soundOn = true; try { soundOn = localStorage.getItem(SOUND_KEY) !== "off"; } catch {}
+      if (soundOn) ding();
+      const text = `${l.customer_name} — ${l.product_name} — ${l.total.toLocaleString("en-US")} دج (${l.wilaya_name})`;
+      toast(`🛒 طلبية جديدة: ${text}`);
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        try {
+          const note = new Notification("🛒 طلبية جديدة #" + l.id, { body: text, tag: "order-" + l.id, icon: "/icon.png" });
+          note.onclick = () => { window.focus(); router.push(`/admin/orders/${l.id}`); note.close(); };
+        } catch {}
+      }
+    }).catch(() => {});
     load();
-    const t = setInterval(load, 60_000);
+    const t = setInterval(load, 30_000);
     return () => { alive = false; clearInterval(t); };
-  }, []);
+  }, [router]);
+  async function askPermission() {
+    if (typeof Notification === "undefined") return;
+    const p = await Notification.requestPermission();
+    setPerm(p);
+    if (p === "granted") { ding(); new Notification("✅ التنبيهات خدامة", { body: "كي تدخل طلبية جديدة يجيك تنبيه هنا", icon: "/icon.png" }); }
+  }
+  function toggleSound() {
+    const v = !sound; setSound(v);
+    try { localStorage.setItem(SOUND_KEY, v ? "on" : "off"); } catch {}
+    if (v) ding();
+  }
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
@@ -53,6 +118,12 @@ function Bell() {
       {open && (
         <div className="absolute left-0 top-12 z-50 w-72 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-line">
           <p className="border-b border-line px-4 py-3 font-extrabold text-navy">🔔 التنبيهات</p>
+          <div className="flex flex-wrap gap-2 border-b border-line bg-soft px-4 py-2.5">
+            {perm === "default" && <button onClick={askPermission} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white">🔔 فعّل تنبيه المتصفح</button>}
+            {perm === "granted" && <span className="rounded-lg bg-green-100 px-2.5 py-1.5 text-xs font-bold text-green-800">✅ تنبيه المتصفح خدام</span>}
+            {perm === "denied" && <span className="text-[11px] text-muted">التنبيه مبلوكي: فعّلو من إعدادات المتصفح (🔒 حدا الرابط)</span>}
+            <button onClick={toggleSound} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-navy ring-1 ring-line">{sound ? "🔊 الصوت خدام" : "🔇 الصوت مطفي"}</button>
+          </div>
           {!count && <p className="p-5 text-center text-sm text-muted">ما كانش تنبيهات 👌</p>}
           {!!n?.newOrders && <Link href="/admin/orders?status=new" onClick={() => setOpen(false)} className="block border-b border-line px-4 py-3 text-sm hover:bg-soft">🆕 <b>{n.newOrders}</b> طلبية جديدة تستنى التأكيد</Link>}
           {!!n?.abandoned && <Link href="/admin/abandoned" onClick={() => setOpen(false)} className="block border-b border-line px-4 py-3 text-sm hover:bg-soft">🛍️ <b>{n.abandoned}</b> طلبية متروكة — اتصل بيهم</Link>}

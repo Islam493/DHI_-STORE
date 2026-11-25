@@ -77,6 +77,16 @@ export async function POST(req: Request) {
       const t = await trackingStatus(String(b.tracking || "").trim());
       return NextResponse.json({ ok: true, label: t.label, state: t.state, raw: t.raw });
     }
+    if (b.action === "telegram") {
+      if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) return NextResponse.json({ error: "تيليغرام مازال ما تربطش: زيد TELEGRAM_BOT_TOKEN و TELEGRAM_CHAT_ID فـ Vercel" }, { status: 409 });
+      const r = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: "✅ تنبيهات DHI Electronics خدامة!\nكي تدخل طلبية جديدة توصلك هنا 🛒" }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.ok === false) return NextResponse.json({ error: `تيليغرام رفض: ${j.description || r.status}. تأكد من الـ TOKEN، و CHAT_ID، وبلي ضغطت Start فالبوت.` }, { status: 400 });
+      return NextResponse.json({ ok: true });
+    }
     if (b.action === "tick") return NextResponse.json({ ok: true, result: await tick() });
     return NextResponse.json({ error: "أمر غير معروف" }, { status: 400 });
   } catch (e) { return fail(e); }
