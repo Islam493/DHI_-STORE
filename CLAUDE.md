@@ -34,7 +34,9 @@
 ## الأدوات المربوطة
 - **Meta Ads**: حساب المتجر `707420317801133` (بيزنس H&I marketing)، صفحة «DHI electronics»، انستغرام `@dhi_electronics`.
 - Canva، Ad Library، مهارات التسويق.
-- **TikTok Ads**: الموصّل الرسمي «TikTok for Business» (claude.ai/customize/connectors). صاحب المتجر راهو يربطو؛ يخدم فالجلسات الجديدة.
+- **TikTok Ads** ✅ مربوط (الموصّل الرسمي «TikTok for Business»). الحسابات: **DHI ELEL** `7696879790909014037` (USD، هو اللي خدام)، INFOPRO DIGITAL_adv `7703554936743198741` (USD، واقف من 4 نوفمبر)، ECOMRETAIL_adv `7685785855876825104` (EUR، واقف من 31 أكتوبر). كاين موصّل شخصي «tik tok» برابط غالط (business-apltiktok.com) لازم يتنحى.
+  - بيكسل TikTok «CAMPIX2» `DAL7NVJC77U2FG646I20`: **مشارك، ماهوش ملكو**. first-party cookies مطفية. فيه قاعدة قديمة SHOPPING على صفحة شوبيفاي `/pages/شكرا-لطلبك` (ما بقاتش).
+  - تحليل 25 نوفمبر (DHI ELEL): من البداية 869.64$ ← 500 طلبية (1.74$). آخر 7 أيام 158.45$ ← 67 (2.36$)، قبلها 80.19$ ← 71 (1.13$). الرابحين: كاميرات X2/X1 LENS (~0.86–1.08$)، PHONE (1.26$). الخاسرين: 4G SOLAR الكبيرة (13–14$)، IPHONE COPI (4$ + خطر سياسات).
 - Posty و Ayrshare تنزّلو (النشر، التعليقات، الرسائل): يحتاجو تسجيل الدخول/مفتاح، والشبكة مفتوحة ليهم.
 - الودنين: Whisper (faster-whisper) يتنزّل من Hugging Face (مفتوح فالشبكة) فـ venv فالـ scratchpad.
 
