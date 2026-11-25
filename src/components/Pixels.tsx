@@ -5,6 +5,7 @@ const clean = (v: string) => v.replace(/[^A-Za-z0-9_-]/g, "");
 
 // فيسبوك: الزبون اللي طلب قبل (معلوماتو محفوظة فالمتصفح تاعو) ← نعطيو للبيكسل رقمو واسمو وبلديتو.
 // البيكسل يشفّرهم (SHA-256) قبل ما يخرجو، وهكا فيسبوك يعرف شكون اشترى من أنهي إعلان (Advanced Matching يدوي، بلا مفتاح)
+// تيك توك: نفس الحاجة بـ ttq.identify، الرقم مشفّر من قبل فالمتصفح («dhi-tth» = SHA-256 تاع +213…)
 export default async function Pixels() {
   const px = (await getSettings()).pixels;
   const fb = clean(px.facebook), tt = clean(px.tiktok), sc = clean(px.snapchat);
@@ -20,7 +21,9 @@ fbq('init','${fb}',am);fbq('track','PageView');`}</Script>
       {tt && (
         <Script id="tt-pixel" strategy="afterInteractive">{`
 !function (w, d, t) {w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
-ttq.load('${tt}');ttq.page();}(window, document, 'ttq');`}</Script>
+ttq.load('${tt}');
+try{var h=localStorage.getItem('dhi-tth');if(h){ttq.identify({phone_number:h,external_id:h});}else{var c=JSON.parse(localStorage.getItem('dhi-customer')||'null');if(c&&c.phone&&w.crypto&&crypto.subtle){crypto.subtle.digest('SHA-256',new TextEncoder().encode('+213'+String(c.phone).replace(/\\D/g,'').replace(/^0/,''))).then(function(b){var x=Array.from(new Uint8Array(b),function(v){return v.toString(16).padStart(2,'0')}).join('');try{localStorage.setItem('dhi-tth',x)}catch(e){}ttq.identify({phone_number:x,external_id:x});});}}}catch(e){}
+ttq.page();}(window, document, 'ttq');`}</Script>
       )}
       {sc && (
         <Script id="snap-pixel" strategy="afterInteractive">{`

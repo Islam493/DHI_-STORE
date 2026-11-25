@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Wilaya } from "@/lib/wilayas";
 import { formatPrice } from "@/lib/config";
-import { fbIds, track } from "@/lib/track";
+import { fbIds, keepTiktokId, track } from "@/lib/track";
 import type { Offer, Product } from "@/lib/catalog";
 
 type Errors = Record<string, string>;
@@ -188,6 +188,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
       if (res.ok && data.ok) {
         try { sessionStorage.setItem("lastOrder", JSON.stringify({ id: data.id, total: data.total, pid: product.id, name: product.name, qty })); sessionStorage.removeItem(draftKey); } catch {}
         try { localStorage.setItem(SAVED, JSON.stringify({ name, phone, wilaya, commune, method })); } catch {}
+        await keepTiktokId(phone);
         // البيكسل يتشارجا من جديد فصفحة الشكر ومعاه رقم الزبون (مشفّر) ← «الشراء» يتربط بالإعلان مليح
         const to = `/thank-you?id=${data.id}`;
         if ((window as { __px?: { fb?: boolean } }).__px?.fb) window.location.assign(to); else router.push(to);
@@ -287,7 +288,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
             <div><div className={box("name")}>{icon(I.user)}<input name="name" autoComplete="name" placeholder="الاسم واللقب" aria-label="الاسم واللقب" className={input} required /></div>{err("name")}</div>
             <div><div className={box("phone")}>{icon(I.phone)}<input name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="رقم الهاتف (05 / 06 / 07)" aria-label="رقم الهاتف" className={input} required /></div>{err("phone")}</div>
           </div>
-          <p className="mt-2 text-xs text-muted">🔒 نستعملو رقمك باش نتصلو بيك على هاد الطلبية ونبعثولك التأكيد والتتبع على الواتساب 💬، ويخرج مشفّر لفيسبوك باش نقيسو الإعلانات</p>
+          <p className="mt-2 text-xs text-muted">🔒 نستعملو رقمك باش نتصلو بيك على هاد الطلبية ونبعثولك التأكيد والتتبع على الواتساب 💬، ويخرج مشفّر لفيسبوك وتيك توك باش نقيسو الإعلانات</p>
         </div>
 
         <div>

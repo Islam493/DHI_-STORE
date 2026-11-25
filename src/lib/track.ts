@@ -12,6 +12,15 @@ export function keepFbclid() {
   try { const id = new URLSearchParams(location.search).get("fbclid"); if (id) sessionStorage.setItem("fbclid", id.slice(0, 400)); } catch {}
 }
 
+// تيك توك: نشفّرو رقم الزبون (SHA-256، بصيغة +213…) ونحفظوه فالمتصفح تاعو، والبيكسل يعطيه لـ ttq.identify
+export async function keepTiktokId(phone: string) {
+  try {
+    const e164 = "+213" + phone.replace(/\D/g, "").replace(/^0/, "");
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(e164));
+    localStorage.setItem("dhi-tth", Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join(""));
+  } catch {}
+}
+
 // كوكيز فيسبوك (_fbp, _fbc) تتبعث مع الطلبية: السيرفر يربط الطلبية بالإعلان (Conversions API)
 export function fbIds() {
   if (typeof document === "undefined") return {};
