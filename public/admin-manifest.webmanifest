@@ -1,0 +1,23 @@
+{
+  "name": "DHI لوحة التحكم",
+  "short_name": "DHI Admin",
+  "description": "لوحة التحكم تاع DHI Electronics: الطلبيات والتنبيهات",
+  "id": "/admin",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#0b1f3a",
+  "theme_color": "#0b1f3a",
+  "icons": [
+    { "src": "/app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "التأكيد والمتابعة", "url": "/admin/follow", "icons": [{ "src": "/app/icon-192.png", "sizes": "192x192" }] },
+    { "name": "الطلبات", "url": "/admin/orders", "icons": [{ "src": "/app/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

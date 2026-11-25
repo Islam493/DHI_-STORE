@@ -7,6 +7,7 @@ import { formatPrice, store } from "./config";
 import { logMessage, sendTemplate, sendText, toLocal, wa, type Incoming } from "./whatsapp";
 import { carrier, trackingStatus } from "./ecotrack";
 import { shipOrder } from "./shipping";
+import { sendPush } from "./push";
 
 type Flags = {
   confirm_at?: string; reminder_at?: string; replied_at?: string; no_answer_at?: string; hint_at?: string;
@@ -65,8 +66,10 @@ async function loadOrder(id: string) {
   return o;
 }
 
-// إشعار للفريق فتيليغرام (إذا مربوط)
+// إشعار للفريق: تطبيق اللوحة (Web Push) + تيليغرام (إذا مربوط)
 export async function notifyStaff(text: string) {
+  const [title, ...rest] = text.split("\n");
+  await sendPush({ title: title.slice(0, 120), body: rest.join("\n").slice(0, 300) || "DHI Electronics", url: "/admin/follow" }).catch(() => {});
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chat) return;

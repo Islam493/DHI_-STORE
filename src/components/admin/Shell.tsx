@@ -4,6 +4,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ConfirmHost, MeProvider, Toaster, toast, useMe } from "./ui";
+import PhoneApp, { usePwaSetup } from "./PhoneApp";
 import { roleLabel, type Perm } from "@/lib/perms";
 
 type Item = { href: string; label: string; icon: string; perm?: Perm; soon?: boolean };
@@ -51,12 +52,11 @@ const SOUND_KEY = "dhi-sound";
 function Bell() {
   const [n, setN] = useState<Notif | null>(null);
   const [open, setOpen] = useState(false);
-  const [perm, setPerm] = useState<string>("default");
   const [sound, setSound] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  usePwaSetup();
   useEffect(() => {
-    setPerm(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
     try { setSound(localStorage.getItem(SOUND_KEY) !== "off"); } catch {}
     // أول كليك فالصفحة يفتح الصوت (المتصفحات تمنع الصوت قبل)
     const unlock = () => { try { audio ||= new AudioContext(); audio.resume(); } catch {} };
@@ -82,22 +82,19 @@ function Bell() {
       const text = `${l.customer_name} — ${l.product_name} — ${l.total.toLocaleString("en-US")} دج (${l.wilaya_name})`;
       toast(`🛒 طلبية جديدة: ${text}`);
       if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        try {
-          const note = new Notification("🛒 طلبية جديدة #" + l.id, { body: text, tag: "order-" + l.id, icon: "/icon.png" });
+        // نفس «tag» تاع تنبيه التيليفون: إذا جاو الزوج يبان واحد برك
+        const title = "🛒 طلبية جديدة #" + l.id;
+        navigator.serviceWorker?.getRegistration("/admin").then((reg) => {
+          if (reg) return reg.showNotification(title, { body: text, tag: "order-" + l.id, icon: "/app/icon-192.png", badge: "/app/badge.png", data: { url: `/admin/orders/${l.id}` } });
+          const note = new Notification(title, { body: text, tag: "order-" + l.id, icon: "/app/icon-192.png" });
           note.onclick = () => { window.focus(); router.push(`/admin/orders/${l.id}`); note.close(); };
-        } catch {}
+        }).catch(() => {});
       }
     }).catch(() => {});
     load();
     const t = setInterval(load, 30_000);
     return () => { alive = false; clearInterval(t); };
   }, [router]);
-  async function askPermission() {
-    if (typeof Notification === "undefined") return;
-    const p = await Notification.requestPermission();
-    setPerm(p);
-    if (p === "granted") { ding(); new Notification("✅ التنبيهات خدامة", { body: "كي تدخل طلبية جديدة يجيك تنبيه هنا", icon: "/icon.png" }); }
-  }
   function toggleSound() {
     const v = !sound; setSound(v);
     try { localStorage.setItem(SOUND_KEY, v ? "on" : "off"); } catch {}
@@ -118,11 +115,9 @@ function Bell() {
       {open && (
         <div className="absolute left-0 top-12 z-50 w-72 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-line">
           <p className="border-b border-line px-4 py-3 font-extrabold text-navy">🔔 التنبيهات</p>
-          <div className="flex flex-wrap gap-2 border-b border-line bg-soft px-4 py-2.5">
-            {perm === "default" && <button onClick={askPermission} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white">🔔 فعّل تنبيه المتصفح</button>}
-            {perm === "granted" && <span className="rounded-lg bg-green-100 px-2.5 py-1.5 text-xs font-bold text-green-800">✅ تنبيه المتصفح خدام</span>}
-            {perm === "denied" && <span className="text-[11px] text-muted">التنبيه مبلوكي: فعّلو من إعدادات المتصفح (🔒 حدا الرابط)</span>}
-            <button onClick={toggleSound} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-navy ring-1 ring-line">{sound ? "🔊 الصوت خدام" : "🔇 الصوت مطفي"}</button>
+          <div className="space-y-2.5 border-b border-line bg-soft px-4 py-3">
+            <PhoneApp />
+            <button onClick={toggleSound} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-navy ring-1 ring-line">{sound ? "🔊 الصوت خدام (كي تكون اللوحة محلولة)" : "🔇 الصوت مطفي"}</button>
           </div>
           {!count && <p className="p-5 text-center text-sm text-muted">ما كانش تنبيهات 👌</p>}
           {!!n?.newOrders && <Link href="/admin/orders?status=new" onClick={() => setOpen(false)} className="block border-b border-line px-4 py-3 text-sm hover:bg-soft">🆕 <b>{n.newOrders}</b> طلبية جديدة تستنى التأكيد</Link>}

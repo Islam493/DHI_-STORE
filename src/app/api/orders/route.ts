@@ -3,6 +3,7 @@ import { getSettings } from "@/lib/settings";
 import { placeOrder } from "@/lib/checkout";
 import { markConverted } from "@/lib/abandoned";
 import { notifyTelegram } from "@/lib/orders";
+import { sendPush } from "@/lib/push";
 import { onOrderCreated } from "@/lib/automation";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
   after(async () => {
     await Promise.allSettled([
       notifyTelegram(r.order),
+      sendPush({ title: `🛒 طلبية جديدة #${r.order.id}`, body: `${r.order.customer_name} — ${r.order.product_name} — ${r.order.total.toLocaleString("en-US")} دج (${r.order.wilaya_name})`, url: `/admin/orders/${r.order.id}`, tag: `order-${r.order.id}` }),
       markConverted(r.order, draft, true), // الطلبية المتروكة (إذا كانت) ولات طلبية حقيقية
       onOrderCreated(r.order), // رسالة التأكيد بالواتساب
     ]);
