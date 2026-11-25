@@ -29,20 +29,35 @@ const nav: Item[] = [
 type Latest = { id: string; created_at: string; customer_name: string; product_name: string; total: number; wilaya_name: string };
 type Notif = { newOrders: number; abandoned?: number; lowStock: { id: string; name: string; stock: number }[]; latest?: Latest | null };
 
-// صوت «تيلين» بلا ملفات (يخدم من بعد أول كليك فالصفحة، قاعدة المتصفحات)
+// صوت «كا-تشينغ» 💰 كي تدخل طلبية (يخدم من بعد أول كليك فالصفحة، قاعدة المتصفحات)
 let audio: AudioContext | null = null;
-function ding() {
+let cash: AudioBuffer | null = null;
+async function loadCash() {
+  if (cash || !audio) return;
+  try { cash = await audio.decodeAudioData(await (await fetch("/app/cash.mp3")).arrayBuffer()); } catch { cash = null; }
+}
+function unlockAudio() {
+  try { audio ||= new AudioContext(); if (audio.state === "suspended") audio.resume(); loadCash(); } catch { /* المتصفح ما يسمحش */ }
+}
+// صوت احتياطي إذا الملف ما تحمّلش
+function beep() {
+  [0, 0.18, 0.36].forEach((t, i) => {
+    const o = audio!.createOscillator(); const g = audio!.createGain();
+    o.type = "sine"; o.frequency.value = [880, 1175, 1568][i];
+    g.gain.setValueAtTime(0.0001, audio!.currentTime + t);
+    g.gain.exponentialRampToValueAtTime(0.35, audio!.currentTime + t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, audio!.currentTime + t + 0.3);
+    o.connect(g).connect(audio!.destination); o.start(audio!.currentTime + t); o.stop(audio!.currentTime + t + 0.32);
+  });
+}
+async function ding() {
   try {
-    audio ||= new AudioContext();
-    if (audio.state === "suspended") audio.resume();
-    [0, 0.18, 0.36].forEach((t, i) => {
-      const o = audio!.createOscillator(); const g = audio!.createGain();
-      o.type = "sine"; o.frequency.value = [880, 1175, 1568][i];
-      g.gain.setValueAtTime(0.0001, audio!.currentTime + t);
-      g.gain.exponentialRampToValueAtTime(0.35, audio!.currentTime + t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, audio!.currentTime + t + 0.3);
-      o.connect(g).connect(audio!.destination); o.start(audio!.currentTime + t); o.stop(audio!.currentTime + t + 0.32);
-    });
+    unlockAudio();
+    await loadCash();
+    if (!audio) return;
+    if (!cash) return beep();
+    const src = audio.createBufferSource(); const g = audio.createGain();
+    g.gain.value = 0.9; src.buffer = cash; src.connect(g).connect(audio.destination); src.start();
   } catch { /* المتصفح ما يسمحش */ }
 }
 const LAST_KEY = "dhi-last-order";
@@ -59,9 +74,8 @@ function Bell() {
   useEffect(() => {
     try { setSound(localStorage.getItem(SOUND_KEY) !== "off"); } catch {}
     // أول كليك فالصفحة يفتح الصوت (المتصفحات تمنع الصوت قبل)
-    const unlock = () => { try { audio ||= new AudioContext(); audio.resume(); } catch {} };
-    window.addEventListener("pointerdown", unlock, { once: true });
-    return () => window.removeEventListener("pointerdown", unlock);
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    return () => window.removeEventListener("pointerdown", unlockAudio);
   }, []);
   useEffect(() => {
     let alive = true;
@@ -117,7 +131,12 @@ function Bell() {
           <p className="border-b border-line px-4 py-3 font-extrabold text-navy">🔔 التنبيهات</p>
           <div className="space-y-2.5 border-b border-line bg-soft px-4 py-3">
             <PhoneApp />
-            <button onClick={toggleSound} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-navy ring-1 ring-line">{sound ? "🔊 الصوت خدام (كي تكون اللوحة محلولة)" : "🔇 الصوت مطفي"}</button>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={toggleSound} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-navy ring-1 ring-line">{sound ? "🔊 الصوت خدام" : "🔇 الصوت مطفي"}</button>
+              <button onClick={() => ding()} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-navy ring-1 ring-line">💰 اسمع الصوت</button>
+              <a href="/app/cash.mp3" download="dhi-cash.mp3" className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-navy ring-1 ring-line">⬇️ نزّلو للتيليفون</a>
+            </div>
+            <p className="text-[10px] leading-4 text-muted">باش تنبيه التيليفون يصوّن بالدراهم حتى كي يكون مسكّر: نزّل الصوت، ومن بعد إعدادات التيليفون ← التطبيقات ← Chrome ← الإشعارات ← الموقع تاعنا ← الصوت ← اختار dhi-cash.</p>
           </div>
           {!count && <p className="p-5 text-center text-sm text-muted">ما كانش تنبيهات 👌</p>}
           {!!n?.newOrders && <Link href="/admin/orders?status=new" onClick={() => setOpen(false)} className="block border-b border-line px-4 py-3 text-sm hover:bg-soft">🆕 <b>{n.newOrders}</b> طلبية جديدة تستنى التأكيد</Link>}
