@@ -21,7 +21,7 @@ export default function ThankYou({ whatsapp }: { whatsapp: string }) {
       setOrder(o);
       const key = `tracked:${o.id}`;
       if (!sessionStorage.getItem(key)) {
-        track("Purchase", { id: o.pid, name: o.name, value: o.total, quantity: o.qty });
+        track("Purchase", { id: o.pid, name: o.name, value: o.total, quantity: o.qty }, 0, `o_${o.id}`); // نفس event_id تاع السيرفر (lib/capi.ts)
         sessionStorage.setItem(key, "1");
       }
     } catch {}

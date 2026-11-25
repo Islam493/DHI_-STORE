@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Wilaya } from "@/lib/wilayas";
 import { formatPrice } from "@/lib/config";
-import { track } from "@/lib/track";
+import { fbIds, track } from "@/lib/track";
 import type { Offer, Product } from "@/lib/catalog";
 
 type Errors = Record<string, string>;
@@ -181,7 +181,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product: product.slug, variant, quantity: qty, wilaya, method, commune,
-          name, phone, hp: fd.get("dhi_hp_x"), draft: draft.current,
+          name, phone, hp: fd.get("dhi_hp_x"), draft: draft.current, ...fbIds(),
         }),
       });
       const data = await res.json();

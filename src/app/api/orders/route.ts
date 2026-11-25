@@ -5,6 +5,7 @@ import { markConverted } from "@/lib/abandoned";
 import { notifyTelegram } from "@/lib/orders";
 import { sendPush } from "@/lib/push";
 import { onOrderCreated } from "@/lib/automation";
+import { capiOrderCreated, readCtx } from "@/lib/capi";
 
 // حماية من التكرار: 3 طلبيات كل 10 دقايق لنفس الرقم.
 // الـ IP: بزاف تاع الزبائن (موبيليس، جيزي، أوريدو) يتقاسمو نفس الـ IP، علاه الحد واسع
@@ -51,12 +52,14 @@ export async function POST(req: Request) {
   }
   // كلشي آخر يخرج من بعد ما نجاوبو الزبون (صفحة الشكر تبانلو دغيا)
   const draft = clean(body.draft, 40);
+  const ctx = readCtx(body, req); // المتصفح + كوكيز فيسبوك (للـ Conversions API)
   after(async () => {
     await Promise.allSettled([
       notifyTelegram(r.order),
       sendPush({ title: `🛒 طلبية جديدة #${r.order.id}`, body: `${r.order.customer_name} — ${r.order.product_name} — ${r.order.total.toLocaleString("en-US")} دج (${r.order.wilaya_name})`, url: `/admin/orders/${r.order.id}`, tag: `order-${r.order.id}` }),
       markConverted(r.order, draft, true), // الطلبية المتروكة (إذا كانت) ولات طلبية حقيقية
       onOrderCreated(r.order), // رسالة التأكيد بالواتساب
+      capiOrderCreated(r.order, ctx), // فيسبوك: Purchase من السيرفر (رقم الزبون مشفّر)
     ]);
   });
   return NextResponse.json({ ok: true, id: r.order.id, total: r.order.total });

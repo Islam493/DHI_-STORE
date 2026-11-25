@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "@/components/admin/ui";
 import { api } from "@/components/admin/api";
 import SaveBar from "@/components/admin/SaveBar";
+import CapiCard from "@/components/admin/CapiCard";
 
 type Content = {
   successOrders: number | null; announcement: string[]; socials: { facebook: string; instagram: string; tiktok: string };
@@ -103,6 +104,7 @@ export default function Settings() {
             <input className={input} dir="ltr" value={s.pixels[p.k]} placeholder={p.ph} onChange={(e) => setS({ ...s, pixels: { ...s.pixels, [p.k]: e.target.value.trim() } })} />
           </div>
         ))}
+        <CapiCard />
       </section>
 
       <section className={card}>

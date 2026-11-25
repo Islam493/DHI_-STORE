@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { dbInsert, dbUpdate } from "./db";
 
 export * from "./order-types";
@@ -47,6 +48,12 @@ export async function updateOrder(cur: Order, patch: Partial<Order>, by = "؟") 
   } catch (e) {
     if (!missingColumn(e)) throw e;
     await dbUpdate("orders", { id: cur.id }, strip(p));
+  }
+  // فيسبوك (Conversions API): الطلبية تأكدت ولا وصلت ← نخبروه من بعد (ما نعطلوش الفريق)
+  if (patch.status && patch.status !== cur.status) {
+    const o = { ...cur, ...patch } as Order, s = patch.status;
+    const job = () => import("./capi").then((m) => m.capiStatus(o, s)).catch((e) => console.error("capi:", e));
+    try { after(job); } catch { void job(); }
   }
 }
 
