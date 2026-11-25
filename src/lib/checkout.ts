@@ -1,8 +1,8 @@
 // إنشاء طلبية (من الموقع ولا من اللوحة): التحقق + الحساب + المخزون + الحفظ
 import { getProduct } from "./catalog";
 import { getWilayas } from "./settings";
-import { saveOrder, notifyTelegram, type Order } from "./orders";
-import { adjustStock, availableStock } from "./stock";
+import { saveOrder, type Order } from "./orders";
+import { adjustStock } from "./stock";
 import { carrier, communes, type Commune } from "./ecotrack";
 import { formatPrice } from "./config";
 
@@ -102,13 +102,11 @@ export async function placeOrder(input: CheckoutInput, opts: { ip?: string | nul
   const stop = opts.gate ? await opts.gate(order) : null;
   if (stop) return stop;
 
-  // المخزون: إذا كان متبوع، لازم يكفي، ونحجزوه للطلبية
-  const avail = await availableStock(product.id);
-  if (avail !== null && avail < quantity) {
-    return { ok: false, status: 409, error: avail === 0 ? "نفذ المخزون تاع هاد المنتج 😔 راسلنا على الواتساب" : `باقي غير ${avail} فالمخزون` };
-  }
+  // المخزون: إذا كان متبوع، لازم يكفي، ونحجزوه للطلبية (فخطوة وحدة)
   const res = await adjustStock(product.id, -quantity, "order", order.id, opts.by || "زبون");
-  if (res.tracked && !res.ok) return { ok: false, status: 409, error: "نفذ المخزون تاع هاد المنتج 😔" };
+  if (res.tracked && !res.ok) {
+    return { ok: false, status: 409, error: !res.stock ? "نفذ المخزون تاع هاد المنتج 😔 راسلنا على الواتساب" : `باقي غير ${res.stock} فالمخزون` };
+  }
   order.stock_applied = res.tracked;
 
   try {
@@ -118,6 +116,5 @@ export async function placeOrder(input: CheckoutInput, opts: { ip?: string | nul
     console.error(e);
     return { ok: false, status: 500, error: "صرا مشكل، عاود جرّب ولا اتصل بينا على الواتساب" };
   }
-  await notifyTelegram(order);
-  return { ok: true, order };
+  return { ok: true, order }; // تيليغرام والواتساب يخرجو من بعد (after) باش الزبون ما يستناش
 }

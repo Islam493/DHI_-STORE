@@ -58,6 +58,8 @@ export type Settings = {
   profit: { carrierFees: Record<string, { home: number | null; desk: number | null }>; returnFee: number; codPercent: number };
   // الأتمتة: تأكيد بالواتساب، تذكير، إرسال لشركة التوصيل، تتبع الطلبية حتى توصل
   automation: Automation;
+  // الاسم اللي يتكتب فالبوليصة تاع World Express لكل منتج (يتفكر آخر اسم كتبتو)
+  shipNames: Record<string, string>;
   seeded?: boolean;
 };
 export type Automation = { confirm: boolean; reminderHours: number; noAnswerHours: number; autoShip: boolean; tracking: boolean; messages: boolean };
@@ -78,6 +80,7 @@ const defaults = (): Settings => ({
   content: defaultContent,
   profit: { carrierFees: {}, returnFee: 0, codPercent: 0 },
   automation: defaultAutomation,
+  shipNames: {},
 });
 
 export async function getSettings(fresh = false): Promise<Settings> {
@@ -97,6 +100,7 @@ export async function getSettings(fresh = false): Promise<Settings> {
       blocked: { phones: d.blocked?.phones || [], ips: d.blocked?.ips || [] },
       profit: { carrierFees: d.profit?.carrierFees || {}, returnFee: Number(d.profit?.returnFee) || 0, codPercent: Number(d.profit?.codPercent) || 0 },
       automation: { ...defaultAutomation, ...(d.automation || {}) },
+      shipNames: d.shipNames || {},
       content: {
         ...defaultContent, ...(d.content || {}),
         socials: {

@@ -2,6 +2,7 @@ import { NextResponse, after } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { placeOrder } from "@/lib/checkout";
 import { markConverted } from "@/lib/abandoned";
+import { notifyTelegram } from "@/lib/orders";
 import { onOrderCreated } from "@/lib/automation";
 
 // حماية بسيطة من الطلبات المتكررة: 3 طلبيات كل 10 دقايق لنفس الرقم/IP
@@ -43,9 +44,14 @@ export async function POST(req: Request) {
     if (r.blocked) return NextResponse.json({ ok: true, id: Date.now().toString(36).toUpperCase(), total: 0 });
     return NextResponse.json(r.errors ? { errors: r.errors } : { error: r.error }, { status: r.status });
   }
-  // الطلبية المتروكة (إذا كانت) ولات طلبية حقيقية
-  await markConverted(r.order, clean(body.draft, 40), true).catch(() => {});
-  // رسالة التأكيد بالواتساب (بعد ما نجاوبو الزبون، باش ما يستناش)
-  after(() => onOrderCreated(r.order).catch((e) => console.error("wa confirm:", e)));
+  // كلشي آخر يخرج من بعد ما نجاوبو الزبون (صفحة الشكر تبانلو دغيا)
+  const draft = clean(body.draft, 40);
+  after(async () => {
+    await Promise.allSettled([
+      notifyTelegram(r.order),
+      markConverted(r.order, draft, true), // الطلبية المتروكة (إذا كانت) ولات طلبية حقيقية
+      onOrderCreated(r.order), // رسالة التأكيد بالواتساب
+    ]);
+  });
   return NextResponse.json({ ok: true, id: r.order.id, total: r.order.total });
 }

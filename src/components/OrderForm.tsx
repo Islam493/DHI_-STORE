@@ -118,6 +118,7 @@ export default function OrderForm({ product, wilayas }: { product: Product; wila
   const onStart = () => {
     if (started.current) return;
     started.current = true;
+    router.prefetch("/thank-you"); // صفحة الشكر تكون واجدة قبل ما يضغط
     track("InitiateCheckout", { id: product.id, name: product.name, value: unit });
   };
   const clearErr = (k: string) => errors[k] && setErrors((prev) => { const next = { ...prev }; delete next[k]; return next; });

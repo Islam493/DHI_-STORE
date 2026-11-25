@@ -14,17 +14,20 @@ export default function ShipPanel({ o, onDone, onCancel }: { o: Order; onDone: (
   const [desk, setDesk] = useState(o.delivery_method === "desk");
   const [montant, setMontant] = useState(String(o.total));
   const [remarque, setRemarque] = useState(o.note || "");
+  const fallback = `${o.product_name}${o.variant ? ` (${o.variant})` : ""}`;
+  const [produit, setProduit] = useState(`${fallback} x${o.quantity}`);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api<{ communes: Commune[] }>(`/api/admin/shipping/communes?wilaya=${o.wilaya_code}`).then(({ communes }) => {
+    api<{ communes: Commune[]; shipName: string | null }>(`/api/admin/shipping/communes?wilaya=${o.wilaya_code}&product=${encodeURIComponent(o.product_id)}`).then(({ communes, shipName }) => {
       setList(communes);
+      if (shipName) setProduit(`${shipName} x${o.quantity}`);
       const want = norm(o.commune);
       const hit = communes.find((c) => norm(c.name) === want) || communes.find((c) => want && (norm(c.name).includes(want) || want.includes(norm(c.name))));
       if (hit) setCommune(hit.name);
     }).catch((e) => setErr(e.message));
-  }, [o.wilaya_code, o.commune]);
+  }, [o.wilaya_code, o.commune, o.product_id, o.quantity]);
 
   const deskOk = useMemo(() => !list || list.find((c) => c.name === commune)?.desk !== false, [list, commune]);
 
@@ -32,7 +35,7 @@ export default function ShipPanel({ o, onDone, onCancel }: { o: Order; onDone: (
     setBusy(true); setErr("");
     try {
       const r = await api<{ tracking: string }>("/api/admin/shipping/send", {
-        method: "POST", body: JSON.stringify({ id: o.id, commune, montant: Number(montant), remarque, stop_desk: desk ? 1 : 0 }),
+        method: "POST", body: JSON.stringify({ id: o.id, commune, montant: Number(montant), remarque, produit, stop_desk: desk ? 1 : 0 }),
       });
       onDone(r.tracking);
     } catch (e) { setErr((e as Error).message); setBusy(false); }
@@ -57,6 +60,10 @@ export default function ShipPanel({ o, onDone, onCancel }: { o: Order; onDone: (
       </div>
       {desk && !deskOk && <p className="text-xs font-bold text-amber-700">⚠️ هاد البلدية ما فيهاش مكتب عند World Express</p>}
       <div>
+        <label className="mb-1 block text-xs font-bold">اسم المنتج فالبوليصة <span className="font-normal text-muted">(يتفكرو للمرة الجاية)</span></label>
+        <input className={input} value={produit} onChange={(e) => setProduit(e.target.value)} maxLength={255} />
+      </div>
+      <div>
         <label className="mb-1 block text-xs font-bold">المبلغ اللي يخلصو الزبون (دج)</label>
         <input className={input} inputMode="numeric" value={montant} onChange={(e) => setMontant(e.target.value.replace(/\D/g, ""))} />
         <p className="mt-0.5 text-xs text-muted">المجموع تاع الطلبية: {fmt(o.total)}</p>
@@ -67,7 +74,7 @@ export default function ShipPanel({ o, onDone, onCancel }: { o: Order; onDone: (
       </div>
       {err && <p className="rounded-lg bg-sale/10 p-2 font-semibold text-sale">{err}</p>}
       <div className="grid grid-cols-[1fr_auto] gap-2">
-        <button onClick={send} disabled={busy || !commune || !montant} className="rounded-lg bg-violet-700 py-2.5 font-extrabold text-white disabled:opacity-50">{busy ? "جاري الإرسال..." : "✅ أكّد الإرسال"}</button>
+        <button onClick={send} disabled={busy || !commune || !montant || !produit.trim()} className="rounded-lg bg-violet-700 py-2.5 font-extrabold text-white disabled:opacity-50">{busy ? "جاري الإرسال..." : "✅ أكّد الإرسال"}</button>
         <button onClick={onCancel} className="rounded-lg bg-white px-4 font-bold ring-1 ring-line">إلغاء</button>
       </div>
     </div>

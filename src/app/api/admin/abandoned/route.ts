@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { notifyTelegram } from "@/lib/orders";
 import { audit } from "@/lib/audit";
 import { getAllProducts } from "@/lib/catalog";
 import { getWilayas } from "@/lib/settings";
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
     }, { ip: c.ip, extraNote: "🛍️ من الطلبات المتروكة", by });
     if (!r.ok) return NextResponse.json(r.errors ? { errors: r.errors, error: Object.values(r.errors)[0] } : { error: r.error }, { status: r.status });
     await markConverted(r.order, c.id);
+    after(() => notifyTelegram(r.order));
     await audit(by, "abandoned.convert", c.id, { order: r.order.id });
     return NextResponse.json({ ok: true, order: r.order.id });
   } catch (e) { return fail(e); }

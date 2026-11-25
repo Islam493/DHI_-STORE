@@ -9,7 +9,16 @@ const SPIN = -1;
 export default function Gallery({ images, videos = [], spin, alt, badge }: { images: string[]; videos?: string[]; spin?: { frames: string[]; reverse?: boolean }; alt: string; badge?: number }) {
   const [i, setI] = useState(0);
   const [motion, setMotion] = useState(false);
-  useEffect(() => setMotion(!window.matchMedia("(prefers-reduced-motion: reduce)").matches), []);
+  // الفيديو يبدا من بعد ما الصفحة تكمّل تتحل (الصورة تبان دغيا)، وما يتحملش فالأنترنت الضعيفة ولا «توفير البيانات»
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (c?.saveData || /(^|-)2g$/.test(c?.effectiveType || "")) return;
+    let t = 0;
+    const go = () => { t = window.setTimeout(() => setMotion(true), 800); };
+    if (document.readyState === "complete") go(); else window.addEventListener("load", go, { once: true });
+    return () => { window.removeEventListener("load", go); clearTimeout(t); };
+  }, []);
   const isSpin = i === SPIN && !!spin;
   const vid = motion && !isSpin ? videos[i] : "";
 

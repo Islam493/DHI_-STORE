@@ -2,8 +2,15 @@
 import { createParcel } from "./ecotrack";
 import { updateOrder } from "./orders";
 import type { Order } from "./order-types";
+import { getSettings } from "./settings";
 
-export async function shipOrder(o: Order, opts: { commune?: string; montant?: number; stop_desk?: boolean; remarque?: string } = {}, by = "النظام") {
+// الاسم فالبوليصة: اللي تفكرناه لهاد المنتج، ولا اسم المنتج
+export async function shipName(o: Pick<Order, "product_id" | "product_name" | "variant">) {
+  const saved = (await getSettings()).shipNames?.[o.product_id];
+  return saved || `${o.product_name}${o.variant ? ` (${o.variant})` : ""}`;
+}
+
+export async function shipOrder(o: Order, opts: { commune?: string; montant?: number; stop_desk?: boolean; remarque?: string; produit?: string } = {}, by = "النظام") {
   if (o.tracking) throw new Error(`الطلبية مبعوثة ديجا (${o.tracking})`);
   const commune = (opts.commune ?? o.commune ?? "").trim();
   if (!commune) throw new Error("اختار البلدية");
@@ -19,7 +26,7 @@ export async function shipOrder(o: Order, opts: { commune?: string; montant?: nu
     code_wilaya: o.wilaya_code,
     montant,
     remarque: String(opts.remarque ?? o.note ?? "").slice(0, 255),
-    produit: `${o.product_name}${o.variant ? ` (${o.variant})` : ""} x${o.quantity}`.slice(0, 255),
+    produit: (opts.produit?.trim() || `${await shipName(o)} x${o.quantity}`).slice(0, 255),
     stop_desk: desk ? 1 : 0,
     type: 1,
   });

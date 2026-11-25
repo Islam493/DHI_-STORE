@@ -5,6 +5,7 @@ import { shipOrder } from "@/lib/shipping";
 import { onShipped } from "@/lib/automation";
 import type { Order } from "@/lib/order-types";
 import { actor, fail, guard } from "@/lib/admin-api";
+import { getSettings, saveSettings } from "@/lib/settings";
 
 // يبعث الطلبية لـ World Express ويحفظ رقم التتبع
 export async function POST(req: Request) {
@@ -20,7 +21,14 @@ export async function POST(req: Request) {
     const montant = Math.round(Number(b.montant));
     if (!(montant >= 0)) return NextResponse.json({ error: "المبلغ غالط" }, { status: 400 });
     const by = await actor();
-    const r = await shipOrder(o, { commune, montant, stop_desk: b.stop_desk === 1 || b.stop_desk === true, remarque: String(b.remarque ?? o.note ?? "") }, by);
+    const produit = typeof b.produit === "string" ? b.produit.trim().slice(0, 255) : "";
+    const r = await shipOrder(o, { commune, montant, stop_desk: b.stop_desk === 1 || b.stop_desk === true, remarque: String(b.remarque ?? o.note ?? ""), produit }, by);
+    // نتفكرو الاسم لهاد المنتج (بلا الكمية) للمرة الجاية
+    const name = produit.replace(/\s*[x×]\s*\d+\s*$/i, "").trim();
+    if (name) {
+      const s = await getSettings(true);
+      if (s.shipNames?.[o.product_id] !== name) await saveSettings({ shipNames: { ...(s.shipNames || {}), [o.product_id]: name } }).catch(() => {});
+    }
     const { tracking, shipped_at } = r;
     after(() => onShipped(r.order));
     await audit(by, "order.ship", o.id, { tracking });
