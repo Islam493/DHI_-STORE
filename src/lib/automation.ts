@@ -67,9 +67,9 @@ async function loadOrder(id: string) {
 }
 
 // إشعار للفريق: تطبيق اللوحة (Web Push) + تيليغرام (إذا مربوط)
-export async function notifyStaff(text: string) {
+export async function notifyStaff(text: string, url = "/admin/follow") {
   const [title, ...rest] = text.split("\n");
-  await sendPush({ title: title.slice(0, 120), body: rest.join("\n").slice(0, 300) || "DHI Electronics", url: "/admin/follow" }).catch(() => {});
+  await sendPush({ title: title.slice(0, 120), body: rest.join("\n").slice(0, 300) || "DHI Electronics", url }).catch(() => {});
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chat) return;

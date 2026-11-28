@@ -60,10 +60,15 @@ export type Settings = {
   automation: Automation;
   // الاسم اللي يتكتب فالبوليصة تاع World Express لكل منتج (يتفكر آخر اسم كتبتو)
   shipNames: Record<string, string>;
+  // روبوت فيسبوك/انستغرام: يجاوب على الرسائل والكومونتيرات
+  social: Social;
   seeded?: boolean;
 };
 export type Automation = { confirm: boolean; reminderHours: number; noAnswerHours: number; autoShip: boolean; tracking: boolean; messages: boolean };
 export const defaultAutomation: Automation = { confirm: true, reminderHours: 3, noAnswerHours: 24, autoShip: false, tracking: true, messages: true };
+// enabled = الزر الكبير (مطفي حتى يشعلو صاحب المتجر). note = تعليمات زايدة من عندو (عرض هاد السمانة...)
+export type Social = { enabled: boolean; dm: boolean; comments: boolean; publicReply: boolean; privateReply: boolean; humanHours: number; note: string };
+export const defaultSocial: Social = { enabled: false, dm: true, comments: true, publicReply: true, privateReply: true, humanHours: 12, note: "" };
 
 const defaults = (): Settings => ({
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP || OFFICIAL.phone,
@@ -81,6 +86,7 @@ const defaults = (): Settings => ({
   profit: { carrierFees: {}, returnFee: 0, codPercent: 0 },
   automation: defaultAutomation,
   shipNames: {},
+  social: defaultSocial,
 });
 
 export async function getSettings(fresh = false): Promise<Settings> {
@@ -100,6 +106,7 @@ export async function getSettings(fresh = false): Promise<Settings> {
       blocked: { phones: d.blocked?.phones || [], ips: d.blocked?.ips || [] },
       profit: { carrierFees: d.profit?.carrierFees || {}, returnFee: Number(d.profit?.returnFee) || 0, codPercent: Number(d.profit?.codPercent) || 0 },
       automation: { ...defaultAutomation, ...(d.automation || {}) },
+      social: { ...defaultSocial, ...(d.social || {}) },
       shipNames: d.shipNames || {},
       content: {
         ...defaultContent, ...(d.content || {}),
